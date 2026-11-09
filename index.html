@@ -421,6 +421,16 @@ table.opm input:disabled:checked{accent-color:#9a93a6}
 #lgVid video.on{opacity:1}
 #lgVid::after{content:'';position:absolute;inset:0;background:radial-gradient(70% 70% at 50% 50%,rgba(40,12,80,0) 40%,rgba(40,12,80,.28) 100%),linear-gradient(180deg,rgba(70,30,130,.06),rgba(70,30,130,.18))}
 .lgv-on:not(.lgv-fail) .login-card{box-shadow:0 30px 80px rgba(46,18,90,.30),0 6px 18px rgba(46,18,90,.12)}
+/* koyu (parçacık) videoda daha hafif kenar gölgesi */
+[data-lgtone=dark] #lgVid{background:#0d0618}
+[data-lgtone=dark] #lgVid::after{background:radial-gradient(70% 70% at 50% 50%,rgba(0,0,0,0) 50%,rgba(0,0,0,.35) 100%)}
+[data-lgtone=dark].lgv-on:not(.lgv-fail) .login-card{box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06)}
+/* demo: arka plan seçici */
+.lg-pick{position:absolute;right:16px;bottom:16px;z-index:3;display:flex;align-items:center;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(30,10,60,.18);font-size:12px}
+.lg-pick span{padding:0 8px;color:var(--p800);font-weight:700}
+.lg-pick button{all:unset;cursor:pointer;padding:6px 12px;border-radius:999px;color:var(--p800);font-weight:700}
+.lg-pick button.on{background:var(--p700);color:#fff}
+.lg-pick button:focus-visible{outline:2px solid var(--g400)}
 </style></head>
 <body><div id="app" style="height:100%"></div><div id="ov"></div><div id="sms"></div><div id="toast"></div><div id="tip" hidden></div><input id="planFile" type="file" accept=".xlsx" data-file="plan" aria-label="Excel plan dosyası" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -1308,16 +1318,23 @@ const expBtns=()=>`<button class="btn ghost sm" data-a="xprint">${ic('down')} PD
 /* Giriş arka planı: tam ekran döngülü video (login-bg.mp4, index.html'in yanında).
    İki video öğesi sonda 1,6 sn çapraz geçişle değişir, böylece tekrar başlangıcı görünmez.
    Video yüklenemezse CSS'teki şeritli arka plan kalır; hareketi azalt ayarında kapak karesi durur. */
-const LGV=(()=>{let box,vs=[],cur=0,fading=false;
+const LG_BGS=[{id:'ink',n:'Mürekkep',src:'login-bg.mp4',poster:'login-bg.jpg',tone:'light'},{id:'particle',n:'Parçacık',src:'login-bg-2.mp4',poster:'login-bg-2.jpg',tone:'dark'}];
+const LGV=(()=>{let box,vs=[],cur=0,fading=false,bg=null;
  const rm=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const pick=()=>{let k=null;try{k=localStorage.getItem('lark-login-bg')}catch(e){}return LG_BGS.find(b=>b.id===k)||LG_BGS[0]};
+ function load(b){bg=b;document.documentElement.classList.remove('lgv-fail');document.documentElement.dataset.lgtone=b.tone;cur=0;fading=false;
+  vs.forEach((v,i)=>{v.pause();v.poster=b.poster;v.src=b.src;v.classList.toggle('on',i===0)})}
  function init(){if(box)return;box=document.createElement('div');box.id='lgVid';box.setAttribute('aria-hidden','true');
-  for(let i=0;i<2;i++){const v=document.createElement('video');v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.preload=i?'metadata':'auto';v.poster='login-bg.jpg';v.src='login-bg.mp4';
-   v.addEventListener('error',()=>document.documentElement.classList.add('lgv-fail'));v.addEventListener('timeupdate',()=>tu(i));box.appendChild(v);vs.push(v)}
-  vs[0].classList.add('on');document.body.prepend(box)}
+  for(let i=0;i<2;i++){const v=document.createElement('video');v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.preload=i?'metadata':'auto';
+   v.addEventListener('error',()=>{if(v.getAttribute('src'))document.documentElement.classList.add('lgv-fail')});v.addEventListener('timeupdate',()=>tu(i));box.appendChild(v);vs.push(v)}
+  document.body.prepend(box);load(pick())}
  function tu(i){if(i!==cur||fading)return;const v=vs[i];if(v.duration&&v.currentTime>v.duration-1.7){fading=true;const n=vs[1-i];n.currentTime=0;n.play().catch(()=>{});n.classList.add('on');v.classList.remove('on');cur=1-i;setTimeout(()=>{v.pause();fading=false},1800)}}
- return {sync(show){try{init()}catch(e){return}document.documentElement.classList.toggle('lgv-on',show);if(show&&!rm())vs[cur].play().catch(()=>{});else vs.forEach(x=>x.pause())}}})();
+ return {cur:()=>(bg||pick()).id,
+  set(id){const b=LG_BGS.find(x=>x.id===id);if(!b)return;try{localStorage.setItem('lark-login-bg',id)}catch(e){}init();load(b);this.sync(!S.authed)},
+  sync(show){try{init()}catch(e){return}document.documentElement.classList.toggle('lgv-on',show);if(show&&!rm())vs[cur].play().catch(()=>{});else vs.forEach(x=>x.pause())}}})();
+acts.lgBg=d=>{LGV.set(d.x);render()};
 const _renderV=render;render=function(){_renderV();LGV.sync(!S.authed)};
-function vLogin(){const quick=[['amir','Vardiya Amiri'],['kkontrol','Kalite Kontrol'],['teknik','Teknik Kalite'],['cikis','Çıkış Operatörü'],['uretimMd','Üretim Müdürü'],['admin','LARK Admin']];return `<div class="login"><div class="lg-bg" aria-hidden="true"><i class="lg-glow"></i><i class="lg-b b1"></i><i class="lg-b b2"></i><i class="lg-b b3"></i><i class="lg-b b4"></i><i class="lg-l"></i><i class="lg-r r1"></i><i class="lg-r r2"></i><i class="lg-r r3"></i><i class="lg-r r4"></i><i class="lg-grain"></i></div><div class="login-card"><img src="${LOGO_DARK}" alt="Lark" class="login-logo"><h1>Üretim Operasyon ve Kalite Platformu</h1><form data-s="login" class="stack" id="loginF">${fld('Kullanıcı adı',inp('lgU',S.lgU||'','autocomplete="username" autocapitalize="none" placeholder="ad.soyad"'),'Örnek: serkan.aydin')}${fld('Şifre',inp('lgP','','type="password" autocomplete="current-password"'),'Prototip: tüm hesaplarda şifre <b>lark</b>')}${S.lgE?`<div class="err-line">${esc(S.lgE)}</div>`:''}<button class="btn big gold" type="submit">GİRİŞ</button></form><div class="small muted b">Rolle hızlı giriş</div><div class="quick">${quick.map(([k,t])=>`<button class="btn ghost sm" data-a="lgAs" data-x="${k}"><b>${esc(t)}</b></button>`).join('')}</div></div></div>`}
+function vLogin(){const quick=[['amir','Vardiya Amiri'],['kkontrol','Kalite Kontrol'],['teknik','Teknik Kalite'],['cikis','Çıkış Operatörü'],['uretimMd','Üretim Müdürü'],['admin','LARK Admin']];return `<div class="login"><div class="lg-bg" aria-hidden="true"><i class="lg-glow"></i><i class="lg-b b1"></i><i class="lg-b b2"></i><i class="lg-b b3"></i><i class="lg-b b4"></i><i class="lg-l"></i><i class="lg-r r1"></i><i class="lg-r r2"></i><i class="lg-r r3"></i><i class="lg-r r4"></i><i class="lg-grain"></i></div><div class="lg-pick no-print" role="group" aria-label="Giriş arka planı (demo)"><span>Arka plan</span>${LG_BGS.map(b=>`<button class="${LGV.cur()===b.id?'on':''}" data-a="lgBg" data-x="${b.id}" aria-pressed="${LGV.cur()===b.id}">${b.n}</button>`).join('')}</div><div class="login-card"><img src="${LOGO_DARK}" alt="Lark" class="login-logo"><h1>Üretim Operasyon ve Kalite Platformu</h1><form data-s="login" class="stack" id="loginF">${fld('Kullanıcı adı',inp('lgU',S.lgU||'','autocomplete="username" autocapitalize="none" placeholder="ad.soyad"'),'Örnek: serkan.aydin')}${fld('Şifre',inp('lgP','','type="password" autocomplete="current-password"'),'Prototip: tüm hesaplarda şifre <b>lark</b>')}${S.lgE?`<div class="err-line">${esc(S.lgE)}</div>`:''}<button class="btn big gold" type="submit">GİRİŞ</button></form><div class="small muted b">Rolle hızlı giriş</div><div class="quick">${quick.map(([k,t])=>`<button class="btn ghost sm" data-a="lgAs" data-x="${k}"><b>${esc(t)}</b></button>`).join('')}</div></div></div>`}
 /* ---- Vardiya girişi: 3 saatlik koli, çıkış onayından ayrı girilir, fark gösterilir ---- */
 function vShiftE(){const sh=curShift();const ps=periods(sh);const ls=S.lines;const can=['amir','admin','uretimMd'].includes(S.role);const open=ps.filter(p=>p.end<=nowM());const lastP=open[open.length-1]||ps[0];
   const inWin=open.length&&nowM()<lastP.end+S.cfg.p3W;
