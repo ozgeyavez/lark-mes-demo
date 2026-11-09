@@ -1421,7 +1421,7 @@ Object.assign(acts,{
  xPrdS2(d){const name=val('pN'),code=d.x||val('pC').toUpperCase(),gram=parseFloat(val('pW').replace(',','.'));if(!code||!name||!(gram>0)){S.ov.err='Stok kodu, ad ve gramaj zorunlu.';renderOv();return}if(!d.x&&P(code)){S.ov.err='Bu stok kodu kullanılıyor.';renderOv();return}const o={name,cat:val('pG'),gram,koliAdet:+val('pA')||24,koliPalet:+val('pL')||60};if(d.x){Object.assign(P(d.x),o);audit('Ürün güncellendi',code)}else{PRODUCTS.push({code,seri:'',img:'',...o});audit('Ürün eklendi',code)}S.ov=null;toast('Ürün kaydedildi.');render()},
  xPrdT(d){const p=P(d.x);p.off=!p.off;audit(p.off?'Ürün pasif':'Ürün aktif',p.code);render()},
  xPrdS(d){S.qProd=d.x;S.qTab='spec';S.admT='specs';render()},
- logout(){audit('Oturum kapatıldı',ME().n);S.sessions=S.sessions.filter(x=>x.id!==S.sid);S.sid=null;S.authed=false;S.ov=null;render()},
+ logout(){audit('Oturum kapatıldı',ME().n);closeSess(S.sid,'Çıkış yapıldı');S.sid=null;S.authed=false;S.ov=null;render()},
  lgAs(d){const u=S.users.find(x=>x.role===d.x&&x.active);if(u)doLogin(u.u,'lark')},
  xpage(d){const[k,p]=d.x.split(':');S.page[k]=+p;render()},xprint(){audit('Dışa aktarıldı (PDF)',S.route[0]);window.print()},
  xPickSh(d){setMode(d.x);S.ov=null;render()},
@@ -1481,7 +1481,7 @@ function extFile(t,d){if(d.imp!=null&&t.dataset.imp&&t.files[0]){const file=t.fi
   if(d.fh){const dr=curDraft();if(dr){dr[d.fh]=t.value;render()}return true}
   if(d.fv&&t.tagName==='SELECT'){const dr=curDraft();if(dr){dr.vals[d.fv]=t.value;render()}return true}
   return false}
-function doLogin(un,pw){S.lgU=un;const k=String(un||'').trim().toLowerCase();const u=S.users.find(x=>x.u===k);if(!u||pw!=='lark'){S.lgE='Kullanıcı adı veya şifre hatalı.';render();return}if(!u.active){S.lgE='Bu hesap pasif. Sistem yöneticisine başvurun.';render();return}S.lgE='';S.authed=true;startSession(u);S.route=['home'];S.ov=u.role==='amir'?{k:'shiftType'}:null;render()}
+function doLogin(un,pw){S.lgU=un;const k=String(un||'').trim().toLowerCase();const u=S.users.find(x=>x.u===k);if(!u||pw!=='lark'){failLogin(un,'Hatalı kullanıcı adı veya şifre');S.lgE='Kullanıcı adı veya şifre hatalı.';render();return}if(!u.active){failLogin(un,'Pasif hesap');S.lgE='Bu hesap pasif. Sistem yöneticisine başvurun.';render();return}S.lgE='';S.authed=true;startSession(u);S.route=['home'];S.ov=u.role==='amir'?{k:'shiftType'}:null;render()}
 document.addEventListener('submit',e=>{if(e.target.id==='loginF'){e.preventDefault();doLogin(val('lgU'),val('lgP'))}});
 document.addEventListener('input',e=>{const t=e.target;if(t.closest&&t.closest('#app'))S.dirtyInput=true;const d=t.dataset;if(d.pq!=null){S.pQ=t.value;S.page.prd=0;render();return}if(d.fv&&t.tagName!=='SELECT'){const dr=curDraft();if(!dr)return;dr.vals[d.fv]=t.value;const l=line(dr.code);const f=formOf(l,dr.kind);const x=f.fields.find(q=>q.key===d.fv);const row=t.closest('.qrow');const st=fStat(x,t.value,dr,l);row.classList.toggle('bad',st==='bad');row.classList.toggle('ok',st==='ok');row.classList.remove('miss');row.querySelector('.qst').textContent=st==='bad'?'Uygunsuz':st==='ok'?'Uygun':'';let n=row.querySelector('.qnote');if(st==='bad'&&!n){n=document.createElement('textarea');n.className='inp qnote';n.rows=1;n.placeholder='Açıklama zorunlu';n.dataset.fnote=x.key;n.value=dr.notes[x.key]||'';n.setAttribute('aria-label',x.label+' açıklaması');row.appendChild(n)}if(st!=='bad'&&n)n.remove();const fill=f.fields.filter(q=>dr.vals[q.key]!=null&&dr.vals[q.key]!=='').length,bad=f.fields.filter(q=>fStat(q,dr.vals[q.key],dr,l)==='bad').length;const a=$('[data-fp]');if(a)a.textContent=`${fill}/${f.fields.length}`;const b=$('[data-fb]');if(b){b.textContent=`${bad} uygunsuz`;b.className=bad?'bad-t b':''}}if(d.fnote){const dr=curDraft();if(dr)dr.notes[d.fnote]=t.value}});
 /* ---- Kullanıcı ve yetki yönetimi (KY-001 … KY-020) ----
@@ -1498,7 +1498,11 @@ function navOf(){const x=(ME()||{}).extra||{};return NAV_ORDER.filter(k=>NAV[S.r
 function canOp(s,op){if(op==='view')return navOf().includes(s);if(S.role==='admin')return true;if(!navOf().includes(s))return false;const x=(ME()||{}).extra||{};return (((S.rops||{})[S.role]||{})[s]||[]).includes(op)||(x[s]||[]).includes(op)}
 function nFor(n){if(!n.to.includes(S.role))return false;const u=ME()||{};if(u.notif&&n.kind&&u.notif[n.kind]&&!u.notif[n.kind].length)return false;const c=n.link&&n.link[1];if(c&&line(c)&&!scopeLines().some(l=>l.code===c))return false;return true}
 const userSelect=()=>{const me=ME();return `<select class="chip-top" id="role" aria-label="Kullanıcı değiştir (demo)" data-c="xUser">${S.users.filter(u=>u.active).map(u=>`<option value="${u.id}" ${me&&me.id===u.id?'selected':''}>${esc(u.n)} · ${esc(roleN(u.role))}</option>`).join('')}</select>`};
-function startSession(u,dev='Web'){S.me=u;S.role=u.role;applyScope();u.last=`Bugün ${hm(nowM())}`;const id='S'+(++S.seq);S.sessions.unshift({id,uid:u.id,dev,at:hm(nowM()),act:hm(nowM())});S.sid=id;audit('Oturum açıldı',u.n,'',dev)}
+const nowTs=()=>`${fmtDate(todayStr())} ${hm(nowM())}`;
+const durTxt=m=>m<60?`${m} dk`:`${Math.floor(m/60)} sa ${m%60} dk`;
+function startSession(u,dev='Web'){S.me=u;S.role=u.role;applyScope();u.last=`Bugün ${hm(nowM())}`;const id='S'+(++S.seq);S.sessions.unshift({id,uid:u.id,n:u.n,dev,in:nowTs(),inM:nowM(),out:'',st:'Açık',note:''});S.sid=id;audit('Oturum açıldı',u.n,'',dev)}
+function closeSess(id,note){const x=S.sessions.find(e=>e.id===id&&e.st==='Açık');if(!x)return;x.st='Kapandı';x.out=nowTs();if(x.inM!=null)x.dur=durTxt(Math.max(0,nowM()-x.inM));x.note=note||''}
+function failLogin(un,why){const u=S.users.find(x=>x.u===String(un||'').trim().toLowerCase());S.sessions.unshift({id:'S'+(++S.seq),uid:u?u.id:'',n:u?u.n:(un||'—'),dev:'Web',in:nowTs(),out:'',st:'Başarısız',note:why});audit('Başarısız giriş',u?u.n:(un||'—'),'',why)}
 function seedPerms(){S.rops={};Object.keys(NAV).forEach(r=>{S.rops[r]={};NAV_ORDER.forEach(s=>{const o=[];if(r==='admin')o.push('add','edit','del','appr','exp');else{if(!RO_ROLES.includes(r))o.push('add','edit');if(APPR_ROLES.includes(r))o.push('appr');if(!NOEXP.includes(r))o.push('exp')}S.rops[r][s]=o})})}
 const slug=n=>n.toLocaleLowerCase('tr').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]+/g,'.');
 const defNotif=()=>Object.fromEntries(NKIND.map(([k])=>[k,['Uygulama','Push']]));
@@ -1510,11 +1514,16 @@ function seedUsers(){seedPerms();
     {id:'U202',u:'ayse.kilic',n:'Ayşe Kılıç',role:'kkontrol',dept:'Kalite',gorev:'Kalite Kontrol Sorumlusu',fabs:'NIG,ESK',tes:[],extra:{dash:['view']},notif:defNotif(),active:true,last:'Dün 16:40'},
     {id:'U203',u:'ali.koc',n:'Ali Koç',role:'amir',dept:'Üretim',gorev:'Vardiya Amiri',fabs:'ERE',tes:[],extra:{},notif:defNotif(),active:false,last:'12.10.2026 23:02',note:'İşten ayrıldı'});
   const U=k=>S.users.find(u=>u.u===k).id;
-  S.sessions=[{id:'S1',uid:U('burcu.arslan'),dev:'Web',at:'07:42',act:'10:58'},{id:'S2',uid:U('can.erdem'),dev:'Android tablet',at:'08:01',act:'11:02'},{id:'S3',uid:'U201',dev:'Android',at:'06:55',act:'10:31'}];S.sid=null}
+  const yd=(()=>{const d=new Date(todayStr()+'T12:00:00');d.setDate(d.getDate()-1);return fmtDate(d.toISOString().slice(0,10))})(),td=fmtDate(todayStr());
+  const E=(id,k,dev,inn,out,st,dur,note,inM)=>{const u=S.users.find(x=>x.u===k);return {id,uid:u.id,n:u.n,dev,in:inn,inM,out,st,dur,note}};
+  S.sessions=[E('S6','burcu.arslan','Web',`${td} 07:42`,'','Açık','','',462),E('S5','can.erdem','Android tablet',`${td} 08:01`,'','Açık','','',481),E('S4','murat.yildiz','Android',`${td} 06:55`,'','Açık','','',415),
+    {id:'S3',uid:'',n:'m.yildiz',dev:'Android',in:`${td} 06:53`,out:'',st:'Başarısız',note:'Hatalı kullanıcı adı veya şifre'},
+    E('S2','ayse.kilic','Android tablet',`${yd} 08:05`,`${yd} 16:40`,'Kapandı','8 sa 35 dk','Çıkış yapıldı'),E('S1','hakan.demir','Web',`${yd} 09:12`,`${yd} 10:02`,'Kapandı','50 dk','Oturum süresi doldu'),
+    {id:'S0',uid:'U203',n:'Ali Koç',dev:'Android',in:`${yd} 22:58`,out:'',st:'Başarısız',note:'Pasif hesap'}];S.sid=null}
 /* Yetki kontrolü: işlem butonları, ekran ve işlem türüne göre denetlenir */
 const OPMAP={add:'critNew lineNew xNewA xDAdd xScAdd xLifeAdd xPast xNewS xNcrA xImpGo xUserN',
   edit:'critEdit critSave lineSave xMacS xPrdS2 xRcpS xDSave xEsc xPhase xKpi xScSave xCfg xLife ruleT xReasonS saveStop endStop saveExit p3Save scSave fSave fSend saveCtl startJob closeIn publish aSt aDone alertTake alertClose xPastS stopDlg exitDlg finishDlg ctl xUserE xUserS xBulk xBulkS',
-  del:'xMacT xPrdT rmSpec xUserT xUserX xSessX xPplT',appr:'aOk aRej',exp:'xExcel xprint xDExp xFormX'};
+  del:'xMacT xPrdT rmSpec xUserT xUserX xPplT',appr:'aOk aRej',exp:'xExcel xprint xDExp xFormX'};
 const OPI={};Object.entries(OPMAP).forEach(([op,l])=>l.split(' ').forEach(n=>OPI[n]=op));
 const SCRM={job:'lines',joblist:'lines',form:'forms',andonfull:'andon'};
 const scrOf=()=>{const r=S.route[0];return r==='home'?null:(SCRM[r]||r)};
@@ -1535,9 +1544,10 @@ function vUsers(){const f=S.f.usr||(S.f.usr={});const q=trn(f.q||'');
    ${tbl([['Kullanıcı',u=>`<b>${esc(u.n)}</b><br><span class="small muted">${esc(u.u)}</span>`],['Rol',u=>esc(roleN(u.role))],['Departman / Görev',u=>`${esc(u.dept)}<br><span class="small muted">${esc(u.gorev)}</span>`],['Fabrika',u=>esc(fabsTxt(u.fabs))],['Tesis',u=>esc(tesTxt(u))],['Özel yetki',u=>xcnt(u)?`<span class="pill drain">+${xcnt(u)}</span>`:'<span class="muted">—</span>'],['Durum',u=>u.active?'<span class="pill run">Aktif</span>':`<span class="pill idle">Pasif</span>${u.note?`<br><span class="small muted">${esc(u.note)}</span>`:''}`],['Son giriş',u=>esc(u.last||'—'),'num'],
      ['',u=>`<div class="row nowrap">${xbtn('Düzenle','xUserE',u.id)}${u.id===(me&&me.id)?'':xbtn(u.active?'Pasife al':'Aktif et','xUserT',u.id)}${u.active&&u.id!==(me&&me.id)?xbtn('Erişimi kaldır','xUserX',u.id):''}</div>`]],rows,{key:'usr',size:20,empty:'Filtreye uyan kullanıcı yok.'})}
    <p class="small muted">Pasife alınan kullanıcı giriş yapamaz, açık oturumları kapanır. Geçmiş kayıtları ve denetim izi korunur. Prototipte tüm hesapların şifresi <b>lark</b>.</p></section>`;
-  const ses=`<section class="card stack"><h3>Aktif Oturumlar</h3>${tbl([['Kullanıcı',s=>{const u=S.users.find(x=>x.id===s.uid);return `<b>${esc(u?u.n:'—')}</b><br><span class="small muted">${esc(u?roleN(u.role):'')}</span>`}],['Cihaz',s=>esc(s.dev)],['Açılış',s=>s.at,'num'],['Son işlem',s=>s.id===S.sid?hm(nowM()):s.act,'num'],['',s=>s.id===S.sid?'<span class="pill run">Bu oturum</span>':xbtn('Oturumu sonlandır','xSessX',s.id)]],S.sessions,{empty:'Açık oturum yok.'})}</section>`;
+  const nOpen=S.sessions.filter(x=>x.st==='Açık').length,nFail=S.sessions.filter(x=>x.st==='Başarısız').length;
+  const ses=`<section class="card stack"><div class="row between"><h3>Oturum Kayıtları</h3>${xbtn('Kritik işlemler: Denetim İzi','xAdmT','audit')}</div><p class="small muted">Giriş, çıkış ve başarısız giriş denemeleri kayıt altına alınır. ${nOpen} açık oturum, ${nFail} başarısız deneme.</p>${tbl([['Kullanıcı',x=>`<b>${esc(x.n)}</b>`],['Cihaz',x=>esc(x.dev)],['Giriş',x=>x.in,'num'],['Çıkış',x=>x.out||'—','num'],['Süre',x=>x.st==='Açık'&&x.inM!=null?durTxt(Math.max(0,nowM()-x.inM)):(x.dur||'—'),'num'],['Durum',x=>x.st==='Açık'?'<span class="pill run">Açık</span>':x.st==='Başarısız'?'<span class="pill stop">Başarısız</span>':'<span class="pill idle">Kapandı</span>'],['Açıklama',x=>`<span class="small">${esc(x.id===S.sid?'Bu oturum':x.note||'')}</span>`]],S.sessions,{key:'slog',size:10})}</section>`;
   const ppl=`<section class="card stack"><h3>Personel Kayıtları</h3><p class="small muted">Kart okutma ile tesise atanan personel. Pasife alınan personel yeni kart okutamaz; geçmiş üretim ve performans kayıtları raporlarda kalır.</p>${tbl([['Kart',p=>p.card,'num'],['Personel',p=>`<b>${esc(p.name)}</b>`],['Fabrika',p=>esc(fabN(p.fab))],['Son tesis',p=>esc(p.last||'—')],['Durum',p=>p.active?'<span class="pill run">Aktif</span>':'<span class="pill idle">Pasif</span>'],['',p=>xbtn(p.active?'Pasife al':'Aktif et','xPplT',p.id)]],S.peopleL,{key:'pplA',size:10})}</section>`;
-  return users+`<div class="grid2">${ses}${ppl}</div>`}
+  return users+ses+ppl}
 function opsMatrix(r,x,cls,lock){if(r==='admin')return '<p class="small muted">LARK Admin rolü tüm ekran ve işlemlere yetkilidir.</p>';
   return `<div class="tw"><table class="opm"><thead><tr><th>Ekran</th>${OPS.map(o=>`<th>${o[1]}</th>`).join('')}</tr></thead><tbody>${NAV_ORDER.filter(s=>s!=='home').map(s=>{const v=NAV[r].includes(s);const base=v?(S.rops[r][s]||[]):[];return `<tr><td>${esc(NAVL[s][0])}</td>${OPS.map(([o])=>{const b=o==='view'?v:base.includes(o);const on=b||((x||{})[s]||[]).includes(o);return `<td><input type="checkbox" class="${cls}" value="${s}:${o}" aria-label="${esc(NAVL[s][0])} ${opN(o)}" ${on?'checked':''} ${lock(b,v,o)?'disabled':''} ${cls==='rop'?`data-c="xOp" data-x="${r}:${s}:${o}"`:''}></td>`}).join('')}</tr>`}).join('')}</tbody></table></div>`}
 function vRoleOps(){const r=S.roleSel||'amir';const n=S.users.filter(u=>u.role===r&&u.active).length;
@@ -1568,9 +1578,9 @@ function grabUser(){const u=S.ov.u;u.n=val('uN');u.u=val('uU').toLowerCase();u.d
   if(nr!==u.role){u.role=nr;u.extra={}}else{u.extra={};qa('uxp').forEach(v=>{const[s,o]=v.split(':');(u.extra[s]=u.extra[s]||[]).push(o)})}
   u.notif=Object.fromEntries(NKIND.map(([k])=>[k,[]]));qa('unf').forEach(v=>{const[k,c]=v.split(':');u.notif[k].push(c)})}
 const clone=u=>JSON.parse(JSON.stringify(u));
-function endSessions(uid){S.sessions=S.sessions.filter(s=>s.uid!==uid||s.id===S.sid)}
+function endSessions(uid,note){S.sessions.filter(x=>x.uid===uid&&x.st==='Açık'&&x.id!==S.sid).forEach(x=>closeSess(x.id,note))}
 Object.assign(EXT_C,{
- xUser(v){const u=S.users.find(x=>x.id===v);if(!u||!u.active)return;S.sessions=S.sessions.filter(x=>x.id!==S.sid);startSession(u);S.ov=null;S.homeTab='Tümü';go('home')},
+ xUser(v){const u=S.users.find(x=>x.id===v);if(!u||!u.active)return;closeSess(S.sid,'Kullanıcı değiştirildi');startSession(u);S.ov=null;S.homeTab='Tümü';go('home')},
  xUf(v,x){(S.f.usr=S.f.usr||{})[x]=v;S.page.usr=0;render()},
  xUD(){grabUser();renderOv()},
  xBk(){const o=S.ov;const by=val('bBy');o.ch=qa('bch');o.kind=val('bK');if(by!==o.by){o.by=by;o.v=null}else o.v=val('bV');renderOv();if(o.v==null){o.v=val('bV');renderOv()}},
@@ -1589,9 +1599,8 @@ Object.assign(acts,{
    ch.forEach(([k,a,b])=>{if(a!==b)audit(`Kullanıcı: ${k}`,e.n,k==='Bildirim tercihi'?'':a,k==='Bildirim tercihi'?'Güncellendi':b)});if(e.u!==u.u)audit('Kullanıcı adı',e.n,e.u,u.u);
    Object.assign(e,u);if(S.me===e){S.role=e.role;applyScope()}toast(`${e.n} güncellendi. Yetkiler bir sonraki işlemden itibaren geçerli.`)}
   S.ov=null;if(!navOf().includes(scrOf()||'home')&&S.route[0]!=='home'){go('home');return}render()},
- xUserT(d){const u=S.users.find(x=>x.id===d.x);if(u===S.me){toast('Kendi hesabınızı pasife alamazsınız.');return}u.active=!u.active;if(!u.active){endSessions(u.id);u.note=u.note||'Pasife alındı'}else u.note='';audit(u.active?'Kullanıcı aktif edildi':'Kullanıcı pasife alındı',u.n);toast(u.active?`${u.n} aktif.`:`${u.n} pasife alındı. Geçmiş kayıtları korunur.`);render()},
- xUserX(d){const u=S.users.find(x=>x.id===d.x);if(u===S.me)return;const old=`${fabsTxt(u.fabs)} · +${xcnt(u)} özel yetki`;u.active=false;u.fabs='';u.tes=[];u.extra={};u.note='Erişim kaldırıldı';endSessions(u.id);audit('Erişim kaldırıldı',u.n,old,'Erişim yok');toast(`${u.n} için tüm erişimler kaldırıldı.`);render()},
- xSessX(d){const s=S.sessions.find(x=>x.id===d.x);const u=S.users.find(x=>x.id===s.uid);S.sessions=S.sessions.filter(x=>x!==s);audit('Oturum sonlandırıldı',u?u.n:'',s.dev,'');toast('Oturum sonlandırıldı.');render()},
+ xUserT(d){const u=S.users.find(x=>x.id===d.x);if(u===S.me){toast('Kendi hesabınızı pasife alamazsınız.');return}u.active=!u.active;if(!u.active){endSessions(u.id,'Kullanıcı pasife alındı');u.note=u.note||'Pasife alındı'}else u.note='';audit(u.active?'Kullanıcı aktif edildi':'Kullanıcı pasife alındı',u.n);toast(u.active?`${u.n} aktif.`:`${u.n} pasife alındı. Geçmiş kayıtları korunur.`);render()},
+ xUserX(d){const u=S.users.find(x=>x.id===d.x);if(u===S.me)return;const old=`${fabsTxt(u.fabs)} · +${xcnt(u)} özel yetki`;u.active=false;u.fabs='';u.tes=[];u.extra={};u.note='Erişim kaldırıldı';endSessions(u.id,'Erişim kaldırıldı');audit('Erişim kaldırıldı',u.n,old,'Erişim yok');toast(`${u.n} için tüm erişimler kaldırıldı.`);render()},
  xPplT(d){const p=S.peopleL.find(x=>x.id===d.x);p.active=!p.active;audit(p.active?'Personel aktif edildi':'Personel pasife alındı',`${p.card} · ${p.name}`);render()},
  xBulk(){S.ov={k:'bulk',by:'dept',v:'Üretim',kind:'stop',ch:['Uygulama','Push','SMS']};renderOv()},
  xBulkS(){const o=S.ov;o.ch=qa('bch');const L=bulkUsers(o);const ks=o.kind==='*'?NKIND.map(k=>k[0]):[o.kind];L.forEach(u=>ks.forEach(k=>u.notif[k]=[...o.ch]));audit('Toplu bildirim ataması',`${L.length} kullanıcı`,'',`${o.kind==='*'?'Tüm olaylar':NKIND.find(k=>k[0]===o.kind)[1]}: ${o.ch.join(', ')||'Kapalı'}`);S.ov=null;toast(`${L.length} kullanıcının bildirim tercihi güncellendi.`);render()}
@@ -1602,7 +1611,7 @@ Object.keys(OPI).concat(['xMac','xPrd','xRcp','specSave']).forEach(n=>{const f=a
 /* ---- Demo verisinin tarayıcıda saklanması (GitHub Pages sunucu tarafı veri tutmaz) ----
    Veri bu tarayıcının localStorage alanında kalır; Sıfırla örnek veriye döndürür.
    Veri yapısı değişirse SAVE_VER artırılır, eski kayıt yok sayılır. */
-const SAVE_KEY='lark-mes-demo',SAVE_VER='2026-11-09';
+const SAVE_KEY='lark-mes-demo',SAVE_VER='2026-11-09b';
 const NOSAVE=['lines','H','ov','form','me','imp','dirtyInput','lgE','_scroll'];
 let H0={},saveT=null,noSave=false;
 function saveState(){if(noSave)return;try{const o={};Object.keys(S).forEach(k=>{if(!NOSAVE.includes(k))o[k]=S[k]});o.meId=S.me?S.me.id:null;o.Hx=Object.fromEntries(Object.keys(H0).map(k=>[k,S.H[k].slice(H0[k])]));localStorage.setItem(SAVE_KEY,JSON.stringify({v:SAVE_VER,S:o,NAV,P:PRODUCTS,nid,aid}))}catch(e){}}
