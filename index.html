@@ -518,6 +518,13 @@ th.cf-th{padding:0}
 .jx-qr b{display:block;font-size:14px;color:#2d1a40}.jx-qr small{font-size:12.5px;color:#7a7385}
 .jx-qr .q-wait{color:#a3640f;font-weight:600}.jx-qr .q-ok{color:#2a7a52}.jx-qr .q-bad{color:#b0384d;font-weight:600}.jx-qr .q-draft{color:#6d4a99}
 .hc.hc-go{cursor:pointer;outline:2px dashed #d9a441;outline-offset:-2px}.hc.hc-go:hover{background:#fff6e3}
+.jx-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.jx-row3 .jb{min-height:46px;font-size:14px}
+.jx-io{position:relative;display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #efe9f3;border-radius:10px;overflow:hidden;padding-bottom:4px}
+.jx-io div{padding:10px 12px}.jx-io div+div{border-left:1px solid #f3eef6}.jx-io small{display:block;font-size:12px;color:#7a7385}.jx-io b{font-size:22px;color:#2d1a40;font-variant-numeric:tabular-nums}
+.jx-io div.ok b{color:#2a7a52}
+.jx-io i{position:absolute;left:0;bottom:0;height:4px;width:var(--w);background:#2f9466}
+.mv{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}.mv.in{background:#efe7f6;color:#4b246e}.mv.out{background:#e6f3ec;color:#2a7a52}
+@media (max-width:700px){.jx-row3{grid-template-columns:1fr}}
 </style></head>
 <body><div id="app" style="height:100%"></div><div id="ov"></div><div id="sms"></div><div id="toast"></div><div id="tip" hidden></div><input id="planFile" type="file" accept=".xlsx" data-file="plan" aria-label="Excel plan dosyası" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -940,7 +947,7 @@ function exitDlg(){
   return `<div class="ov" data-ovb><div class="dlg" role="dialog" aria-modal="true" aria-label="Çıkış onayı"><div class="dh"><div><h2>${esc(l.code)} ${O.final?'son çıkış onayı':'çıkış onayı'}</h2><div class="small" style="color:var(--p200)">${esc(l.job.no)} · ${esc(P(l.job.pcode).name)}</div></div><button class="x" data-a="closeOv" aria-label="Kapat">${ic('x')}</button></div>
   <div class="db"><div class="grid2"><div class="field"><label for="exG">Sağlam koli</label><input class="inp num" style="font-size:24px;font-weight:800;min-height:60px" id="exG" inputmode="numeric" value="${esc(O.good)}"></div><div class="field"><label for="exS">Fire koli</label><input class="inp num" style="font-size:24px;font-weight:800;min-height:60px" id="exS" inputmode="numeric" value="${esc(O.scrap)}"></div></div>
   <div class="field"><label for="exN">Not</label><input class="inp" id="exN" placeholder="Palet no veya açıklama"></div>
-  <div class="small muted">Şu ana kadar ${nf(l.job.good)} koli sağlam, ${nf(l.job.scrap)} koli fire. Plan ${nf(l.job.plan)} koli.</div>${O.err?`<div class="err-line">${esc(O.err)}</div>`:''}</div>
+  <div class="small muted">Şu ana kadar ${nf(l.job.good)} koli sağlam, ${nf(l.job.scrap)} koli fire. Plan ${nf(l.job.plan)} koli.${l.job.ins?` Tesise giren ${nf(jIn(l.job))}, tesiste kalan <b>${nf(jIn(l.job)-jOut(l.job))}</b> koli.`:''}</div>${O.err?`<div class="err-line">${esc(O.err)}</div>`:''}</div>
   <div class="df"><button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn ${O.final?'drain':''} big" style="min-height:50px" data-a="saveExit">${ic('check')} ${O.final?'Onayla ve İşi Kapat':'Onayla'}</button></div></div></div>`;
 }
 function endStop(code){const l=line(code);const s=openStop(l);if(s){s.end=nowM();l.status='run';l.lastExit=Math.max(l.lastExit,nowM());l.flags.gap=0;toast(`${l.code} duruşu bitti. Süre ${s.end-s.start} dk. Tesis çalışmaya hazır.`);render()}}
@@ -1189,11 +1196,11 @@ const acts={
   saveStop:()=>{const O=S.ov;if(!O.sel){O.err='Bir duruş nedeni seçin.';renderOv();return}const l=line(O.code);l.stops.push({code:O.sel,start:nowM(),end:null,by:ME().n,src:O.src,note:O.note||''});l.status='stop';S.ov=null;pushN({title:`${l.code} duruşa alındı`,body:`${stopName(O.sel)} · ${O.src} noktası · ${ME().n}`,to:['amir'],ch:'Uygulama',kind:'stop',link:['job',l.code]});toast(`${l.code} duruşa alındı: ${stopName(O.sel)}.`);render()},
   endStop:d=>endStop(d.x),
   exitDlg:d=>{const l=line(d.x);const gap=Math.max(1,nowM()-l.lastExit);S.ov={k:'exit',code:d.x,good:Math.max(1,Math.round(l.rate/60*gap*.9)),scrap:0};renderOv()},
-  finishDlg:d=>{S.ov={k:'exit',code:d.x,good:Math.max(0,line(d.x).job.plan-line(d.x).job.good),scrap:0,final:true};renderOv()},
+  finishDlg:d=>{const J=line(d.x).job;S.ov={k:'exit',code:d.x,good:Math.max(0,J.ins?jIn(J)-jOut(J):J.plan-J.good),scrap:0,final:true};renderOv()},
   saveExit:()=>{const O=S.ov;const l=line(O.code);const g=Number($('#exG').value),s=Number($('#exS').value||0);if(!(Number.isInteger(g)&&g>=0&&Number.isInteger(s)&&s>=0)||(!O.final&&g+s===0)){O.good=$('#exG').value;O.scrap=$('#exS').value;O.err='Sağlam ve fire için tam sayı girin. En az biri sıfırdan büyük olmalı.';renderOv();return}
     const g0=l.job.good;addExit(l,g,s,ME().n,$('#exN').value||(O.final?'Son çıkış':''));S.ov=null;l.lastAdd={no:l.job.no,g,from:g0,to:l.job.good,at:hm(nowM())};
-    if(O.final){const j=l.job;j.state='done';j.finishedAt=hm(nowM());l.done.unshift(j);l.job=null;l.status='idle';pushN({title:`${l.code} iş kapandı`,body:`${j.no} · ${nf(j.good)} sağlam, ${nf(j.scrap)} fire koli`,to:['amir','plan'],ch:'Uygulama',kind:'plan',link:['job',l.code]});toast(`${j.no} kapatıldı. Tesis sıradaki işe hazır.`)}else toast(`${nf(g)} koli sağlam${s?`, ${nf(s)} koli fire`:''} onaylandı.`);render()},
-  startJob:d=>{const l=line(d.x);const no=d.j||(document.querySelector('input[name=jpick]:checked')||{}).value;const ix=Math.max(0,l.queue.findIndex(q=>q.no===no));const j=l.queue.splice(ix,1)[0];S.ov=null;j.state='active';j.startedAt=hm(nowM());l.job=j;j.rcp=null;jobRcp(l);l.status='run';l.lastExit=nowM();l.flags={};const h=Math.floor(nowM()/60);delete l.controls[h];toast(`${j.no} girişte başlatıldı.`);render()},
+    if(O.final){const j=l.job;j.state='done';j.finishedAt=hm(nowM());l.done.unshift(j);l.job=null;l.status='idle';pushN({title:`${l.code} iş kapandı`,body:`${j.no} · ${nf(j.good)} sağlam, ${nf(j.scrap)} fire koli`,to:['amir','plan'],ch:'Uygulama',kind:'plan',link:['job',l.code]});toast(`${j.no} kapatıldı. Tesis sıradaki işe hazır.`)}else{const J=l.job;const left=J.ins?jIn(J)-jOut(J):1;toast(left<=0?`${nf(g)} koli onaylandı. Girilen ürünün tamamı çıktı, İşi Bitir ile kapatın.`:`${nf(g)} koli sağlam${s?`, ${nf(s)} koli fire`:''} onaylandı. Tesiste ${nf(left)} koli kaldı.`)}render()},
+  startJob:d=>{const l=line(d.x);const no=d.j||(document.querySelector('input[name=jpick]:checked')||{}).value;const ix=Math.max(0,l.queue.findIndex(q=>q.no===no));const j=l.queue.splice(ix,1)[0];S.ov=null;j.state='active';j.startedAt=hm(nowM());{const q=parseInt((document.getElementById('jpQ')||{}).value,10);j.ins=[{at:j.startedAt,q:q>0?q:j.plan,by:ME().n,note:'İş başlangıcı'}]}l.job=j;j.rcp=null;jobRcp(l);l.status='run';l.lastExit=nowM();l.flags={};const h=Math.floor(nowM()/60);delete l.controls[h];toast(`${j.no} girişte başlatıldı.`);render()},
   closeIn:d=>{const l=line(d.x);l.status='drain';pushN({title:`${l.code} girişi kapandı`,body:`${l.job.no} için çıkışta son onay bekleniyor.`,to:['amir'],ch:'Uygulama',kind:'plan',link:['job',l.code]});toast('Giriş kapatıldı. Son çıkış onayı bekleniyor.');render()},
   alert:d=>{S.ov={k:'alert',id:d.x};renderOv()},alerttab:d=>{S.alertTab=d.x;render()},
   alertTake:d=>{const a=S.alerts.find(x=>x.id===d.x);a.status='İncelemede';a.owner=ME().n;a.log.push({at:hm(nowM()),ch:'Uygulama',to:a.owner,st:'Üstüne aldı'});S.alertTab='İncelemede';render()},
@@ -1604,7 +1611,8 @@ const EXT_OV={
    ${hist.length?`<h4>Sürüm geçmişi</h4>${tbl([['Sürüm',h=>'v'+h.ver],['Geçerlilik',h=>fmtDate(h.from),'num'],['Ad',h=>esc(h.name)],['Malzeme',h=>(h.items||[]).map(x=>`${esc(x.m)} ${x.q} ${esc(x.u)}`).join(', ')||'-'],['Not',h=>esc(h.note||'')]],hist,{cf:false})}`:''}
    ${o.err?`<div class="err-line">${esc(o.err)}</div>`:''}`,can?`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="xRcpS" data-x="${o.id||''}">Kaydet</button>`:`<button class="btn ghost" data-a="closeOv">Kapat</button>`,'wide')},
  prc(){const o=S.ov,p=P(o.id),cur=new Set((S.prdRcp||{})[o.id]||[]);return dlg(`${p.code} · ${esc(p.name)}`,`<p class="small muted">Bu ürünün üretiminde kullanılan reçeteleri seçin.</p><div class="permg">${S.recipes.map(r=>`<label class="row nowrap"><input type="checkbox" class="prc-c" value="${r.code}" ${cur.has(r.code)?'checked':''}> ${esc(r.code)} <span class="small muted">${esc(r.name)}</span></label>`).join('')}</div>`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="xPrcS">Kaydet</button>`)},
- jobPick(){const l=line(S.ov.code);const q=l.queue;return dlg('İşi Başlat · '+l.code,`<p class="muted">Tesise atanmış iş emrini seçin. Başlatma saati ve kullanıcı kayda geçer.</p><div class="jpick">${q.map((j,i)=>{const p=P(j.pcode);return `<label class="jp-r"><input type="radio" name="jpick" value="${esc(j.no)}" ${i?'':'checked'}><span class="grow"><b class="num">${esc(j.no)}</b>${j.prio==='Yüksek'?' <span class="pill drain">Yüksek</span>':''}<br><span class="small">${esc(j.pcode)} · ${esc(p.name)}</span></span><span class="small muted num" style="text-align:right">${nf(j.plan)} koli<br>${fmtDate(j.date)} ${esc(j.start)} – ${jobEndTxt(j)}</span></label>`}).join('')}</div>`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="startJob" data-x="${esc(l.code)}">${ic('play')} Seçili İşi Başlat</button>`)},
+ inq(){const l=line(S.ov.code);const J=l.job;return dlg('Giriş Onayı · '+l.code,`<p class="muted">${esc(J.no)} · ${esc(P(J.pcode).name)} · Şu ana kadar giren ${nf(jIn(J))} koli</p>${S.ov.err?`<div class="err-line">${esc(S.ov.err)}</div>`:''}${fld('Giren miktar (koli) <em class="req">*</em>','<input class="inp num" id="inQ" inputmode="numeric" style="font-size:22px;font-weight:700">')}${fld('Not','<input class="inp" id="inN" placeholder="Parti / açıklama">')}`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="xInS" data-x="${esc(l.code)}">Onayla</button>`)},
+ jobPick(){const l=line(S.ov.code);const q=l.queue;return dlg('İşi Başlat · '+l.code,`<p class="muted">Tesise atanmış iş emrini seçin. Başlatma saati ve kullanıcı kayda geçer.</p><div class="jpick">${q.map((j,i)=>{const p=P(j.pcode);return `<label class="jp-r"><input type="radio" name="jpick" value="${esc(j.no)}" ${i?'':'checked'}><span class="grow"><b class="num">${esc(j.no)}</b>${j.prio==='Yüksek'?' <span class="pill drain">Yüksek</span>':''}<br><span class="small">${esc(j.pcode)} · ${esc(p.name)}</span></span><span class="small muted num" style="text-align:right">${nf(j.plan)} koli<br>${fmtDate(j.date)} ${esc(j.start)} – ${jobEndTxt(j)}</span></label>`}).join('')}</div>${fld('Tesise giren miktar (koli)','<input class="inp num" id="jpQ" inputmode="numeric" placeholder="Boş bırakılırsa iş emri miktarı">')}`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="startJob" data-x="${esc(l.code)}">${ic('play')} Seçili İşi Başlat</button>`)},
  card(){const ls=S.lines;return dlg('Kart Okut',`${fld('Personel kartı',sel('cP',S.peopleL.filter(p=>p.active).map(p=>[p.id,`${p.card} · ${p.name}`])))}${fld('Tesis',sel('cC',ls.map(l=>[l.code,facL(l)])))}<p class="small muted">Sahada kart okuyucudan gelir. Prototipte seçimle yapılır.</p>`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="xCardS">Okut</button>`)},
  monthly(){return dlg('Ay Sonu Personel Raporu',`<p>Rapor ay sonunda otomatik hazırlanır ve şu kişilere e-posta ile gider:</p><ul>${['uretimMd','fabrikaMd','gm'].map(k=>`<li>${esc(PEOPLE[k].n)} · ${esc(PEOPLE[k].r)}</li>`).join('')}</ul><div class="band-info warn">Prototip: e-posta gönderilmez.</div>`)},
 };
@@ -1621,6 +1629,10 @@ function xlsxOut(name,sheets){const wb=XLSX.utils.book_new();Object.entries(shee
 
 
 
+const jIn=j=>(j.ins||(j.ins=[{at:j.startedAt||j.start,q:j.plan,by:PEOPLE.amir.n,note:'İş başlangıcı'}])).reduce((a,x)=>a+x.q,0);
+const jOut=j=>j.good+j.scrap;
+function mvList(J){if(!J)return '<div class="empty">Aktif iş yok.</div>';jIn(J);const rows=[...J.ins.map(x=>({t:'in',at:x.at,q:x.q,s:0,by:x.by,note:x.note})),...J.exits.map(x=>({t:'out',at:x.at,q:x.good,s:x.scrap,by:x.by,note:x.note}))].sort((a,b)=>a.at.localeCompare(b.at)||(a.t==='in'?-1:1));let bal=0;rows.forEach(r=>{bal+=r.t==='in'?r.q:-(r.q+r.s);r.bal=bal});
+  return `<div class="tw"><table><thead><tr><th>Saat</th><th>Onay</th><th>Koli</th><th>Fire</th><th>Tesiste</th><th>Onaylayan</th><th>Not</th></tr></thead><tbody>${rows.reverse().map(r=>`<tr><td class="num">${esc(r.at)}</td><td><span class="mv ${r.t}">${r.t==='in'?'Giriş':'Çıkış'}</span></td><td class="num b">${r.t==='in'?'+':'−'}${nf(r.q)}</td><td class="num">${r.s?nf(r.s):''}</td><td class="num">${r.bal<=0?'✓ 0':nf(r.bal)}</td><td>${esc(r.by||'')}</td><td>${esc(r.note||'')}</td></tr>`).join('')}</tbody></table></div>`}
 /* Kalite panelinde kontrol girişleri: saatlik kontrol, proses kalite formu, teknik kalite formu */
 function qActs(l){const R=S.role;const X=esc(l.code);const on=l.status!=='idle'&&l.job;
   const st=(r)=>!r?['wait','Bekliyor']:r.status==='sent'?(r.bad?['bad',`Gönderildi · ${r.bad} uygunsuz`]:['ok','Gönderildi']):['draft','Taslak'];
@@ -1636,17 +1648,19 @@ function qActs(l){const R=S.role;const X=esc(l.code);const on=l.status!=='idle'&
 const layTog=()=>`<div class="jx-lay no-print" role="group" aria-label="Görünüm">${[['new','Yeni görünüm'],['old','Eski görünüm']].map(([k,n])=>`<button class="${(S.jobLay==='old'?'old':'new')===k?'on':''}" data-a="xJobLay" data-x="${k}">${n}</button>`).join('')}</div>`;
 function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.job;const X=esc(l.code);const dis=can?'':'disabled';
   const e=J?oee(l):null;const rate=e&&e.run?Math.round(e.total/e.run*60):0;
-  const nums=[['Plan',J?nf(J.plan):'–','koli'],['Sağlam çıkış',J?nf(J.good):'–','koli'],['Kalan',J?nf(Math.max(0,J.plan-J.good)):'–','koli'],['Fire',J&&J.good+J.scrap?'%'+nf1((J.scrap/(J.good+J.scrap)*100).toFixed(1)):'–',''],['Hız',J?`${rate}`:'–',`/ ${l.rate} hedef`]];
+  const nums=[['Plan',J?nf(J.plan):'–','koli'],['Sağlam çıkış',J?nf(J.good):'–','koli'],['Plana kalan',J?nf(Math.max(0,J.plan-J.good)):'–','koli'],['Fire',J&&J.good+J.scrap?'%'+nf1((J.scrap/(J.good+J.scrap)*100).toFixed(1)):'–',''],['Hız',J?`${rate}`:'–',`/ ${l.rate} hedef`]];
   const r=J?jobRcp(l):null;
   const meta=[p?`${p.gram} g`:'',r?`Reçete ${rcpTxt(r.code,r.ver)}`:'',j&&j.country?j.country:''].filter(Boolean).map(esc).join(' · ');
   const when=j?[`Plan ${fmtDate(j.date)} ${j.start} – ${jobEndTxt(j)}`,J&&J.startedAt?`Başladı ${J.startedAt}`:''].filter(Boolean).map(esc).join(' · '):'';
   const B=(cls,a,label,icn,extra='')=>`<button class="jb ${cls}" data-a="${a}" data-x="${X}" ${extra} ${dis}>${ic(icn)}<span>${label}</span></button>`;
+  const gin=J?jIn(J):0,gout=J?jOut(J):0,left=gin-gout,full=J&&left<=0;
   const now=st==='stop'?`Duruş sürüyor: <b>${esc(stopName(os.code))}</b> · ${nowM()-os.start} dk. Sorun giderilince duruşu bitirin.`
-   :st==='run'?`Ürün çıktıkça çıkış onayı verin. Tesisteki son ürün de çıkınca <b>İşi Bitir</b>'e basın. Yeni iş, bu iş bitmeden başlatılamaz.`
+   :st==='run'?(full?`Girilen ürünün tamamı çıktı. <b>İşi Bitir</b>'e basın; tesis sıradaki işe hazır olur.`:`Tesiste <b>${nf(left)} koli</b> var. Ürün çıktıkça çıkış onayı verin; girilen kadar çıkınca iş tamamlanır. Yeni iş, bu iş bitmeden başlatılamaz.`)
    :st==='drain'?`Giriş kapalı. Kalan ürünler çıkınca son çıkış onayıyla işi kapatın.`
    :l.queue.length?`Tesis boşta. Sıradaki iş emrini seçip başlatın.`:`Tesis boşta, sırada iş yok.`;
-  const pri=st==='idle'?(l.queue.length?B('pri','xJobPick','İşi Başlat','play'):''):st==='run'?B('pri','exitDlg','Çıkış Onayı Ver','check'):st==='stop'?B('pri','endStop','Duruşu Bitir','play'):B('pri','finishDlg','Son Çıkış Onayı ve İşi Bitir','check');
-  const sec=st==='run'?B('sec','stopDlg','Duruş Gir','stop','data-src="Tesis"')+B('sec','finishDlg','İşi Bitir','check'):st==='drain'?B('sec','exitDlg','Ara Çıkış Onayı','check'):'';
+  const pri=st==='idle'?(l.queue.length?B('pri','xJobPick','İşi Başlat','play'):''):st==='stop'?B('pri','endStop','Duruşu Bitir','play'):st==='drain'?B('pri','finishDlg','Son Çıkış Onayı ve İşi Bitir','check'):full?B('pri','xFinish','İşi Bitir','check'):B('pri','exitDlg','Çıkış Onayı Ver','check');
+  const sec=st==='run'?(full?B('sec','exitDlg','Çıkış Onayı','check'):B('sec','finishDlg','İşi Bitir','check'))+B('sec','xIn','Giriş Onayı','in')+B('sec','stopDlg','Duruş Gir','stop','data-src="Tesis"'):st==='drain'?B('sec','exitDlg','Ara Çıkış Onayı','check'):'';
+  const cnt=J?`<div class="jx-io"><div><small>Tesise giren</small><b>${nf(gin)}</b></div><div><small>Çıkan</small><b>${nf(gout)}</b></div><div class="${full?'ok':''}"><small>Tesiste kalan</small><b>${full?'✓ 0':nf(left)}</b></div><i style="--w:${gin?Math.min(100,gout/gin*100):0}%"></i></div>`:'';
   const fb=J&&l.lastAdd&&l.lastAdd.no===J.no?`<div class="jx-fb ok">${ic('check')} ${esc(l.lastAdd.at)} · +${nf(l.lastAdd.g)} koli kaydedildi (sağlam çıkış ${nf(l.lastAdd.to)})</div>`:st==='run'?`<div class="jx-fb ${gap>=15?'late':''}">Son çıkış onayı ${hm(l.lastExit)} · ${gap} dk önce</div>`:'';
   const who=can?'':`<div class="jx-fb">Üretim işlemlerini Vardiya Amiri yapar.</div>`;
   const pT=S.jpT||'exit',qT=S.jqT||'ctl';
@@ -1664,9 +1678,9 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
   </section>
   <div class="jx-grid">
     <section class="jx-pan"><header><h3>${ic('play')} Üretim</h3><span>İş akışı ve duruş</span></header>
-      <div class="jx-now">${now}</div>
-      <div class="jx-btns">${pri}${sec?`<div class="jx-row">${sec}</div>`:''}</div>${fb}${who}
-      ${sub('xJpT',pT,[['exit','Çıkış onayları'],['stop','Duruşlar']])}<div class="jx-body">${pT==='stop'?body.stop:body.exit}</div>
+      ${cnt}<div class="jx-now">${now}</div>
+      <div class="jx-btns">${pri}${sec?`<div class="jx-row3">${sec}</div>`:''}</div>${fb}${who}
+      ${sub('xJpT',pT,[['exit','Giriş / Çıkış onayları'],['stop','Duruşlar']])}<div class="jx-body">${pT==='stop'?body.stop:mvList(J)}</div>
     </section>
     <section class="jx-pan"><header><h3>${ic('clip')} Kalite</h3><span>${als.length?`<b class="jx-cnt">${als.length} açık uyarı</b>`:'Açık uyarı yok'}</span></header>
       ${alHtml?`<div class="jx-als">${alHtml}</div>`:''}
@@ -1677,6 +1691,9 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
 }
 Object.assign(acts,{
  xJobLay(d){S.jobLay=d.x;render()},
+ xIn(d){S.ov={k:'inq',code:d.x};render()},
+ xInS(d){const l=line(d.x);const J=l.job;const q=parseInt(val('inQ'),10);if(!(q>0)){S.ov.err='Sıfırdan büyük tam sayı girin.';renderOv();return}jIn(J);J.ins.push({at:hm(nowM()),q,by:ME().n,note:val('inN')});audit('Giriş onayı',l.code,'',`${J.no} +${q} koli`);S.ov=null;toast(`${nf(q)} koli giriş onaylandı. Tesiste ${nf(jIn(J)-jOut(J))} koli var.`);render()},
+ xFinish(d){const l=line(d.x);const j=l.job;j.state='done';j.finishedAt=hm(nowM());l.done.unshift(j);l.job=null;l.status='idle';pushN({title:`${l.code} iş kapandı`,body:`${j.no} · giren ${nf(jIn(j))}, ${nf(j.good)} sağlam, ${nf(j.scrap)} fire koli`,to:['amir','plan'],ch:'Uygulama',kind:'plan',link:['job',l.code]});audit('İş bitirildi',l.code,'',j.no);toast(`${j.no} kapatıldı. Tesis sıradaki işe hazır.`);render()},
  xJpT(d){S.jpT=d.x;render()},xJqT(d){S.jqT=d.x;render()},
  xJobPick(d){const l=line(d.x);if(!l.queue.length)return;S.ov={k:'jobPick',code:d.x};render()},
  xMac(d){S.ov={k:'mac',id:d.x};renderOv()},
@@ -1793,7 +1810,7 @@ function seedUsers(){seedPerms();
     {id:'S0',uid:'U203',n:'Ali Koç',dev:'Android',in:`${yd} 22:58`,out:'',st:'Başarısız',note:'Pasif hesap'}];S.sid=null}
 /* Yetki kontrolü: işlem butonları, ekran ve işlem türüne göre denetlenir */
 const OPMAP={add:'critNew lineNew xNewA xDAdd xScAdd xLifeAdd xPast xNewS xNcrA xImpGo xUserN xRoleN xFabN xTesN',
-  edit:'xJobPick critEdit critSave lineSave xMacS xPrdS2 xRcpS xDSave xEsc xPhase xKpi xScSave xCfg xLife ruleT xReasonS saveStop endStop saveExit p3Save scSave fSave fSend saveCtl startJob closeIn publish aSt aDone alertTake alertClose xPastS stopDlg exitDlg finishDlg ctl xUserE xUserS xBulk xBulkS xRcpS xPrcS xRiAdd xRiRm xSkuChg xSkuChgS xRoleE xRoleS xFabE xFabS xTesE xTesS',
+  edit:'xJobPick xIn xInS xFinish critEdit critSave lineSave xMacS xPrdS2 xRcpS xDSave xEsc xPhase xKpi xScSave xCfg xLife ruleT xReasonS saveStop endStop saveExit p3Save scSave fSave fSend saveCtl startJob closeIn publish aSt aDone alertTake alertClose xPastS stopDlg exitDlg finishDlg ctl xUserE xUserS xBulk xBulkS xRcpS xPrcS xRiAdd xRiRm xSkuChg xSkuChgS xRoleE xRoleS xFabE xFabS xTesE xTesS',
   del:'xMacT xPrdT rmSpec xUserT xUserDel xPplT xRoleT xTesT',appr:'aOk aRej',exp:'xExcel xprint xDExp xFormX xTblX'};
 const OPI={};Object.entries(OPMAP).forEach(([op,l])=>l.split(' ').forEach(n=>OPI[n]=op));
 const SCRM={job:'lines',joblist:'lines',form:'forms',andonfull:'andon'};
