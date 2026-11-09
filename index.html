@@ -485,7 +485,8 @@ th.cf-th{padding:0}
 .jx-st .no{margin-left:auto;font-weight:600;color:#6c6477;font-size:13px}
 .jx-prod{display:flex;gap:12px;align-items:center}.jx-prod img{width:60px;height:40px;object-fit:cover;border-radius:6px;flex:none}
 .jx-prod .nm{font-weight:700;color:#2d1a40;font-size:15px}.jx-prod .mt{font-size:12.5px;color:#7a7385;line-height:1.5}
-.jx-nums{display:grid;grid-template-columns:repeat(5,1fr);border-left:1px solid #efe9f3;align-content:center}
+.jx-rings{border-left:1px solid #efe9f3;padding:10px 14px;display:flex;align-items:center}.jx-rings .rings{width:100%;margin:0;background:none}
+.jx-nums{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #efe9f3}.jx-nums div+div{border-left:1px solid #f3eef6}
 .jx-nums div{padding:14px 12px}
 .jx-nums small{display:block;font-size:12px;color:#7a7385}.jx-nums b{font-size:24px;color:#2d1a40;font-variant-numeric:tabular-nums;font-weight:700}
 .jx-nums em{display:block;font-style:normal;font-size:11.5px;color:#9a93a5}
@@ -511,7 +512,12 @@ th.cf-th{padding:0}
 .jx-als{display:flex;flex-direction:column;gap:8px}
 .jx-al{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid #f0d3d9;background:#fdf6f7;border-radius:10px;font-size:14px;color:#3a2d48}
 .jx-al .i{width:18px;height:18px;color:#b0384d;flex:none}.jx-al small{display:block;color:#8a7f94;font-size:12px}
-@media (max-width:1100px){.jx-card{grid-template-columns:1fr}.jx-nums{border-left:0;border-top:1px solid #efe9f3}.jx-grid{grid-template-columns:1fr}}
+@media (max-width:1100px){.jx-card{grid-template-columns:1fr}.jx-rings{border-left:0;border-top:1px solid #efe9f3}.jx-grid{grid-template-columns:1fr}}
+.jx-q{border:1px solid #efe9f3;border-radius:10px;overflow:hidden}
+.jx-qr{display:flex;align-items:center;gap:10px;padding:10px 12px}.jx-qr+.jx-qr{border-top:1px solid #f3eef6}
+.jx-qr b{display:block;font-size:14px;color:#2d1a40}.jx-qr small{font-size:12.5px;color:#7a7385}
+.jx-qr .q-wait{color:#a3640f;font-weight:600}.jx-qr .q-ok{color:#2a7a52}.jx-qr .q-bad{color:#b0384d;font-weight:600}.jx-qr .q-draft{color:#6d4a99}
+.hc.hc-go{cursor:pointer;outline:2px dashed #d9a441;outline-offset:-2px}.hc.hc-go:hover{background:#fff6e3}
 </style></head>
 <body><div id="app" style="height:100%"></div><div id="ov"></div><div id="sms"></div><div id="toast"></div><div id="tip" hidden></div><input id="planFile" type="file" accept=".xlsx" data-file="plan" aria-label="Excel plan dosyası" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -845,7 +851,7 @@ function vJob(){
   const hrs=[];const[a,b]=shiftWin();for(let h=a;h<=b;h++)hrs.push(h);
   const canCtl=CTL_ROLES.includes(S.role);
   const ctlTab=`<div class="row between"><div class="b">Sonraki kontrol ${hm(nextCtl())}</div>${!canCtl?`<span class="small muted">${d.length?`${pad(d[0])}:00 kontrolü bekleniyor · `:''}Saatlik kontrolü Kalite Kontrol Sorumlusu girer</span>`:d.length?`<button class="btn ${nowM()-d[0]*60>=10?'stop':'gold'}" data-a="ctl" data-x="${esc(l.code)}">${ic('clip')} ${pad(d[0])}:00 Kontrolünü Gir</button>`:(l.job?`<button class="btn ghost sm" data-a="ctl" data-x="${esc(l.code)}" data-extra="1">${ic('plus')} Ek kontrol gir</button>`:'')}</div>
-    <div class="hours">${hrs.map(h=>{const s=ctlState(l,h);return `<div class="hc s-${s}"><span class="num">${pad(h)}:00</span><small>${CELL[s][0]||'·'} ${s==='future'?'':CELL[s][1].split(' ')[0]}</small></div>`}).join('')}</div>
+    <div class="hours">${hrs.map(h=>{const s=ctlState(l,h);const clk=canCtl&&s==='due'&&l.job&&l.status!=='idle';return `<div class="hc s-${s}${clk?' hc-go':''}" ${clk?`data-a="ctl" data-x="${esc(l.code)}" data-h="${h}" role="button" tabindex="0" title="${pad(h)}:00 kontrolünü gir"`:''}><span class="num">${pad(h)}:00</span><small>${CELL[s][0]||'·'} ${s==='future'?'':CELL[s][1].split(' ')[0]}</small></div>`}).join('')}</div>${canCtl?'<div class="small muted">Girilmemiş bir saate tıklayarak o saatin kontrolünü girebilirsiniz.</div>':''}
     ${S.jobLay!=='old'?'':lineAlerts(l).length?`<div class="stack" style="gap:0">${lineAlerts(l).map(a=>`<div class="task"><div class="ic r">${ic('alert')}</div><div class="grow"><div class="tt">${esc(a.crit)}: ${esc(a.val)}</div><div class="small muted">Ref ${esc(a.ref)} · ${a.at} · ${a.status}</div></div>${['kkontrol','amir'].includes(R)?`<button class="btn sm stop" data-a="alert" data-x="${a.id}">İncele</button>`:`<span class="pill stop">Kaliteye iletildi</span>`}</div>`).join('')}</div>`:'<div class="small muted">Bu tesiste açık alert yok.</div>'}`;
   const stops=`${l.stops.length?`<div class="tw"><table><thead><tr><th>Duruş</th><th>Başlangıç</th><th>Süre</th><th>Nokta</th><th>Giren</th><th>Not</th></tr></thead><tbody>${[...l.stops].reverse().map(s=>`<tr><td class="b">${esc(stopName(s.code))}</td><td class="num">${hm(s.start)}</td><td class="num">${(s.end==null?nowM():s.end)-s.start} dk${s.end==null?' <span class="pill stop">Sürüyor</span>':''}</td><td>${esc(s.src)}</td><td>${esc(s.by)}</td><td>${esc(s.note)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Bu vardiyada duruş yok.</div>'}`;
   const exits=j&&j.exits&&j.exits.length?`<div class="tw"><table><thead><tr><th>Saat</th><th>Sağlam</th><th>Fire</th><th>Onaylayan</th><th>Not</th></tr></thead><tbody>${j.exits.map(x=>`<tr><td class="num">${esc(x.at)}</td><td class="num b">${nf(x.good)}</td><td class="num">${nf(x.scrap)}</td><td>${esc(x.by)}</td><td>${esc(x.note)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Henüz çıkış onayı yok.</div>';
@@ -864,8 +870,8 @@ function vJob(){
 }
 
 /* ========== Kontrol formu ========== */
-function openCtl(code,extra){
-  const l=line(code);const p=P(l.job.pcode);const h=Math.floor(nowM()/60);
+function openCtl(code,extra,hh){
+  const l=line(code);const p=P(l.job.pcode);const h=hh!=null&&hh!==''?+hh:Math.floor(nowM()/60);
   S.form={code,hour:h,extra:!!extra,vals:{},media:{},notes:{},err:''};
   S.ov={k:'ctl'};renderOv();
 }
@@ -1178,7 +1184,7 @@ const acts={
   bell:()=>{S.ov={k:'bell'};S.notifs.filter(n=>nFor(n)).forEach(n=>n.read=true);render()},closeOv:()=>{S.ov=null;S.form=null;renderOv()},smsClose:()=>{$('#sms').innerHTML=''},
   nlink:d=>{const n=S.notifs.find(x=>x.id==d.x);n.read=true;S.ov=null;const r=n.link;if(r[0]==='alerts'&&!navOf().includes('alerts')){render();return}go(...r)},
   hometab:d=>{S.homeTab=d.x;render()},hall:d=>{S.hall=d.x;render()},stf:d=>{S.stF=d.x;render()},jobtab:d=>{S.jobTab=d.x;render()},jdt:d=>{S.jobDetailTab=d.x;render()},
-  ctl:d=>openCtl(d.x,d.extra),okv:d=>{S.form.vals[d.x]=d.v;renderOv()},rmMedia:d=>{S.form.media[d.x].splice(+d.i2,1);renderOv()},saveCtl,
+  ctl:d=>openCtl(d.x,d.extra,d.h),okv:d=>{S.form.vals[d.x]=d.v;renderOv()},rmMedia:d=>{S.form.media[d.x].splice(+d.i2,1);renderOv()},saveCtl,
   stopDlg:d=>{S.ov={k:'stop',code:d.x,src:d.src,sel:d.pre||'',note:''};renderOv()},pickStop:d=>{S.ov.sel=d.x;S.ov.err='';renderOv()},
   saveStop:()=>{const O=S.ov;if(!O.sel){O.err='Bir duruş nedeni seçin.';renderOv();return}const l=line(O.code);l.stops.push({code:O.sel,start:nowM(),end:null,by:ME().n,src:O.src,note:O.note||''});l.status='stop';S.ov=null;pushN({title:`${l.code} duruşa alındı`,body:`${stopName(O.sel)} · ${O.src} noktası · ${ME().n}`,to:['amir'],ch:'Uygulama',kind:'stop',link:['job',l.code]});toast(`${l.code} duruşa alındı: ${stopName(O.sel)}.`);render()},
   endStop:d=>endStop(d.x),
@@ -1613,6 +1619,19 @@ const curDraft=()=>{if(S.route[0]!=='form')return null;const[k,c,sl]=S.route[1].
 const fileNames=id=>{const e=document.getElementById(id);return e&&e.files?[...e.files].map(f=>({name:f.name})):[]};
 function xlsxOut(name,sheets){const wb=XLSX.utils.book_new();Object.entries(sheets).forEach(([n,aoa])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),n.slice(0,31).replace(/[\\/?*[\]:]/g,' ')));const u=URL.createObjectURL(new Blob([XLSX.write(wb,{bookType:'xlsx',type:'array'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);audit('Dışa aktarıldı (Excel)',name)}
 
+
+
+/* Kalite panelinde kontrol girişleri: saatlik kontrol, proses kalite formu, teknik kalite formu */
+function qActs(l){const R=S.role;const X=esc(l.code);const on=l.status!=='idle'&&l.job;
+  const st=(r)=>!r?['wait','Bekliyor']:r.status==='sent'?(r.bad?['bad',`Gönderildi · ${r.bad} uygunsuz`]:['ok','Gönderildi']):['draft','Taslak'];
+  const [w0]=shiftWin();const d=[];if(on)for(let h=w0;h*60<=nowM();h++)if(ctlState(l,h)==='due')d.push(h);const ctlS=!on?['','Tesiste aktif iş yok']:d.length?['wait',d.length>1?`${d.map(h=>pad(h)+':00').join(', ')} bekliyor`:`${pad(d[0])}:00 kontrolü bekliyor`]:['ok',`Tümü girildi · sonraki ${hm(nextCtl())}`];
+  const qs=qSlot(l),ts=tqSlot();const qr=qRec(l.code,qs),tr=qRec(l.code,ts,'tq');
+  const rows=[
+    ['Saatlik kontrol',ctlS,CTL_ROLES.includes(R),`data-a="ctl" data-x="${X}" ${d.length?`data-h="${d[0]}"`:'data-extra="1"'}`,d.length?`${pad(d[0])}:00 Kontrolünü Gir`:'Ek Kontrol','Kalite Kontrol Sorumlusu girer'],
+    ['Proses kalite formu',on?st(qr):['','Tesiste aktif iş yok'],['kkontrol','admin'].includes(R),`data-a="go" data-r="form" data-x="qc:${X}:${qs}"`,qr?'Formu Aç':'Formu Gir','Kalite Kontrol Sorumlusu girer'],
+    ['Teknik kalite formu',on?st(tr):['','Tesiste aktif iş yok'],['teknik','admin'].includes(R),`data-a="go" data-r="form" data-x="tq:${X}:${ts}"`,tr?'Formu Aç':'Formu Gir','Teknik Kalite Sorumlusu girer']];
+  return `<div class="jx-q">${rows.map(([n,[c,s],can,attr,btn,who])=>`<div class="jx-qr"><div class="grow"><b>${n}</b><small class="q-${c}">${s}</small></div>${can?`<button class="btn sm ${c==='wait'?'gold':'ghost'}" ${attr} ${on?'':'disabled'}>${btn}</button>`:`<span class="small muted">${who}</span>`}</div>`).join('')}</div>`;
+}
 /* ---- Tesis detay: üstte tesis kartı, altta eşit iki panel (Üretim / Kalite) ---- */
 const layTog=()=>`<div class="jx-lay no-print" role="group" aria-label="Görünüm">${[['new','Yeni görünüm'],['old','Eski görünüm']].map(([k,n])=>`<button class="${(S.jobLay==='old'?'old':'new')===k?'on':''}" data-a="xJobLay" data-x="${k}">${n}</button>`).join('')}</div>`;
 function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.job;const X=esc(l.code);const dis=can?'':'disabled';
@@ -1639,6 +1658,7 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
   <section class="jx-card ${st}">
     <div class="jx-info"><div class="jx-st"><span class="dot">${STL[st]}</span>${j?`<span class="no">${esc(j.no)}${J?'':' · sırada'}</span>`:''}</div>
       <div class="jx-prod">${p?img(p):''}<div><div class="nm">${p?esc(p.name):'Atanmış iş yok'}</div><div class="mt">${meta}</div><div class="mt">${when}</div></div></div></div>
+    <div class="jx-rings">${J?ringsHtml(l):'<div class="jx-fb" style="justify-content:center;height:100%">İş başlayınca OEE burada görünür.</div>'}</div>
     <div class="jx-nums">${nums.map(([k,v,u])=>`<div><small>${k}</small><b>${v}</b>${u?`<em>${u}</em>`:''}</div>`).join('')}</div>
     <div class="jx-proc">${['Giriş',...l.processes,'Çıkış'].map(esc).join('<span>›</span>')}</div>
   </section>
@@ -1650,6 +1670,7 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
     </section>
     <section class="jx-pan"><header><h3>${ic('clip')} Kalite</h3><span>${als.length?`<b class="jx-cnt">${als.length} açık uyarı</b>`:'Açık uyarı yok'}</span></header>
       ${alHtml?`<div class="jx-als">${alHtml}</div>`:''}
+      ${qActs(l)}
       ${sub('xJqT',qT,[['ctl','Saatlik kontrol'],['spec','Referans kartı']])}<div class="jx-body">${qT==='spec'?body.spec:body.ctl}</div>
     </section>
   </div>`;
