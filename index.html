@@ -1642,11 +1642,11 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
   const when=j?[`Plan ${fmtDate(j.date)} ${j.start} – ${jobEndTxt(j)}`,J&&J.startedAt?`Başladı ${J.startedAt}`:''].filter(Boolean).map(esc).join(' · '):'';
   const B=(cls,a,label,icn,extra='')=>`<button class="jb ${cls}" data-a="${a}" data-x="${X}" ${extra} ${dis}>${ic(icn)}<span>${label}</span></button>`;
   const now=st==='stop'?`Duruş sürüyor: <b>${esc(stopName(os.code))}</b> · ${nowM()-os.start} dk. Sorun giderilince duruşu bitirin.`
-   :st==='run'?`Ürün çıktıkça çıkış onayı verin. Son ürün tesise girince girişi kapatın.`
+   :st==='run'?`Ürün çıktıkça çıkış onayı verin. Tesisteki son ürün de çıkınca <b>İşi Bitir</b>'e basın. Yeni iş, bu iş bitmeden başlatılamaz.`
    :st==='drain'?`Giriş kapalı. Kalan ürünler çıkınca son çıkış onayıyla işi kapatın.`
    :l.queue.length?`Tesis boşta. Sıradaki iş emrini seçip başlatın.`:`Tesis boşta, sırada iş yok.`;
   const pri=st==='idle'?(l.queue.length?B('pri','xJobPick','İşi Başlat','play'):''):st==='run'?B('pri','exitDlg','Çıkış Onayı Ver','check'):st==='stop'?B('pri','endStop','Duruşu Bitir','play'):B('pri','finishDlg','Son Çıkış Onayı ve İşi Bitir','check');
-  const sec=st==='run'?B('sec','stopDlg','Duruş Gir','stop','data-src="Tesis"')+B('sec','closeIn','Girişi Kapat','in'):st==='drain'?B('sec','exitDlg','Ara Çıkış Onayı','check'):'';
+  const sec=st==='run'?B('sec','stopDlg','Duruş Gir','stop','data-src="Tesis"')+B('sec','finishDlg','İşi Bitir','check'):st==='drain'?B('sec','exitDlg','Ara Çıkış Onayı','check'):'';
   const fb=J&&l.lastAdd&&l.lastAdd.no===J.no?`<div class="jx-fb ok">${ic('check')} ${esc(l.lastAdd.at)} · +${nf(l.lastAdd.g)} koli kaydedildi (sağlam çıkış ${nf(l.lastAdd.to)})</div>`:st==='run'?`<div class="jx-fb ${gap>=15?'late':''}">Son çıkış onayı ${hm(l.lastExit)} · ${gap} dk önce</div>`:'';
   const who=can?'':`<div class="jx-fb">Üretim işlemlerini Vardiya Amiri yapar.</div>`;
   const pT=S.jpT||'exit',qT=S.jqT||'ctl';
