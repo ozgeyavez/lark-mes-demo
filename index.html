@@ -670,6 +670,10 @@ tr.muted-row td{color:#9a93a5}
 .lx-q button{height:34px}
 .lx-foot{margin:20px 0 0;font-size:11px;line-height:14px}
 .lx-demo{position:absolute;left:500px;top:796px;width:600px;margin:0;font-size:11px;color:rgba(255,255,255,.55);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+
+.cx-h{display:flex;align-items:center;gap:8px;margin:16px 0 0;color:var(--p700);font-weight:800;font-size:15px}.cx-h .i{width:18px;height:18px}
+.cx-d{margin:2px 0 4px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+#cWs[hidden],#cWh[hidden]{display:none}
 </style></head>
 <body><div id="app" style="height:100%"></div><div id="ov"></div><div id="sms"></div><div id="toast"></div><div id="tip" hidden></div><input id="planFile" type="file" accept=".xlsx" data-file="plan" aria-label="Excel plan dosyası" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -2444,8 +2448,8 @@ Object.assign(acts,{
  xRule(d){S.umenu=null;const r=d.x?S.rules.find(x=>x.id==d.x):{id:0,on:true,name:'',when:'',kind:'prod',sev:'Bilgi',roles:[],users:[],deps:[],fabs:[],chs:['Uygulama'],rep:0,ev:''};S.ov={k:'rule',isNew:!d.x,r:JSON.parse(JSON.stringify(r))};render()},
  xRuleEv(){},
  xRuleS(){const o=S.ov,r=o.r;r.name=val('rN');r.kind=val('rK');r.sev=val('rS');r.rep=+val('rR');if(r.roles!==null)r.roles=qv('rc-r');r.users=qv('rc-u');r.deps=qv('rc-d');r.fabs=qv('rc-f');r.chs=qv('rc-c');r.grps=qv('rc-g');r.gorevs=qv('rc-o');r.tes=qv('rc-t');r.andon=!!(document.getElementById('rA')||{}).checked;
-  if(o.isNew){r.ev=+val('rE');const e=S.rules.find(x=>x.id===r.ev);if(e){r.when=e.when;r.wait=ruleWait(e)}}
-  const err=!r.name?'Otomasyon adı zorunlu.':o.isNew&&!r.ev?'Olay seçin.':!r.chs.length?'En az bir kanal seçin.':(r.roles||[]).length+r.users.length+r.deps.length+r.grps.length+r.gorevs.length===0&&r.roles!==null?'En az bir alıcı seçin (rol, grup, görev, kişi veya departman).':'';if(err){o.err=err;renderOv();return}
+  if(o.isNew&&!r.cond){r.ev=+val('rE');const e=S.rules.find(x=>x.id===r.ev);if(e){r.when=e.when;r.wait=ruleWait(e)}}
+  const err=!r.name?'Otomasyon adı zorunlu.':o.isNew&&!r.ev&&!r.cond?'Olay seçin.':!r.chs.length?'En az bir kanal seçin.':(r.roles||[]).length+r.users.length+r.deps.length+r.grps.length+r.gorevs.length===0&&r.roles!==null?'En az bir alıcı seçin (rol, grup, görev, kişi veya departman).':'';if(err){o.err=err;renderOv();return}
   const tm=RULE_TM[r.id];if(tm){const v=parseInt(val('rT'),10);if(!(v>0&&v<=240)){o.err='Süre 1–240 dk arasında olmalı.';renderOv();return}if(v!==S.cfg[tm[0]]){audit('Bildirim süresi',r.name,S.cfg[tm[0]],v);S.cfg[tm[0]]=v}}
   if(o.isNew){r.id=Math.max(...S.rules.map(x=>x.id))+1;r.sys=false;r.edited=true;r.ver=1;S.rules.push(r);audit('Otomasyon eklendi',r.name,'',ruleRcp(r))}
   else{const t=S.rules.find(x=>x.id===r.id);const old=`${t.sev} · ${ruleRcp(t)} · ${(t.chs||[]).join('+')}`;Object.assign(t,{name:r.name,kind:r.kind,sev:r.sev,rep:r.rep,roles:r.roles,users:r.users,deps:r.deps,fabs:r.fabs,chs:r.chs,grps:r.grps,gorevs:r.gorevs,tes:r.tes,andon:r.andon,edited:true,ver:(t.ver||1)+1});audit('Otomasyon güncellendi',t.name,old,`${t.sev} · ${ruleRcp(t)} · ${t.chs.join('+')}`)}
@@ -2830,6 +2834,84 @@ Object.assign(acts,{
 function lxFit(){const st=document.querySelector('.lx-stage');if(!st)return;const vw=document.documentElement.clientWidth||innerWidth,vh=document.documentElement.clientHeight||innerHeight;let s=Math.max(vw/1600,vh/918);const fit=Math.min((vw-24)/414,(vh-60)/651);if(s>fit)s=fit;st.style.transform=`translate(${(vw-1600*s)/2}px,${(vh-918*s)/2}px) scale(${s})`}
 {const _r=render;render=function(){const x=_r.apply(this,arguments);if(!S.authed)lxFit();return x}}
 addEventListener('resize',lxFit);
+/* ---- Koşullu otomasyonlar: metrik + operatör + eşik + süreklilik ---- */
+Object.assign(ICON,{ceye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',cflt:'<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',cmail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'});
+const C_ST=[['run','Çalışıyor'],['stop','Duruşta'],['drain','Sonlanıyor'],['idle','Boşta']];
+const C_OPS={eq:'=',ne:'≠',gt:'>',ge:'≥',lt:'<',le:'≤'};
+const C_OPN={gt:'>  üzerinde',ge:'≥  en az',lt:'<  altında',le:'≤  en fazla',eq:'=  eşit',ne:'≠  eşit değil'};
+function cShK(l,sh){let k=0;Object.entries(l.hourly||{}).forEach(([h,v])=>{const m=h*60;if(m>=sh.start&&m<sh.end)k+=v});return k}
+const C_M={
+ st:{n:'Tesis durumu',k:'stop',en:C_ST,v:l=>l.status},
+ stopMin:{n:'Süren duruş süresi',u:'dk',k:'stop',v:l=>{const o=openStop(l);return o?nowM()-o.start:0}},
+ stopCnt:{n:'Vardiyadaki duruş sayısı',u:'adet',k:'stop',v:(l,sh)=>l.stops.filter(s=>s.start>=sh.start).length},
+ stopTot:{n:'Vardiyadaki toplam duruş',u:'dk',k:'stop',v:(l,sh)=>l.stops.filter(s=>s.start>=sh.start).reduce((a,s)=>a+((s.end==null?nowM():s.end)-s.start),0)},
+ perf:{n:'Hedef gerçekleşme',u:'%',k:'target',v:(l,sh)=>{const el=nowM()-sh.start;if(el<30||l.status==='idle'||!l.rate)return null;return Math.round(cShK(l,sh)/(l.rate*el/60)*100)}},
+ koli:{n:'Vardiya üretimi',u:'koli',k:'prod',v:(l,sh)=>cShK(l,sh)},
+ gap:{n:'Son çıkış onayından beri geçen süre',u:'dk',k:'prod',v:l=>l.status==='run'?exitGap(l):null},
+ scrap:{n:'Vardiya firesi',u:'kg',k:'fire',v:(l,sh)=>S.scrapR.filter(r=>r.code===l.code&&r.shStart===sh.start&&!r.void).reduce((a,r)=>a+r.kg,0)},
+ ncr:{n:'Açık kalite uygunsuzluğu',u:'adet',k:'qc',v:l=>ncrAll().filter(n=>n.l.code===l.code).length}};
+const cOps=m=>C_M[m].en?['eq','ne']:['gt','ge','lt','le','eq','ne'];
+function cThL(c,v){const M=C_M[c.m];if(M.en)return (M.en.find(x=>x[0]===v)||[0,v])[1];return M.u==='%'?`%${nf1(+v)}`:`${nf1(+v)} ${M.u}`}
+function cTxt(r){const c=r.cond;return `${C_M[c.m].n} ${C_OPS[c.op]} ${cThL(c,c.th)}${c.d?`, ${c.d} dk boyunca`:''}`}
+function cWTxt(r){const w=r.cond.w||{t:'all'};if(w.t==='sh')return (w.sh||[]).map(i=>(shiftList()[+i]||{}).n).filter(Boolean).join(', ');if(w.t==='hr')return `${w.a}–${w.b}`;return 'Tüm gün'}
+function cWhen(r,m){const w=r.cond.w||{t:'all'};if(w.t==='sh'){const n=shiftAt(m).name;return (w.sh||[]).some(i=>(shiftList()[+i]||{}).n===n)}if(w.t==='hr'){const t=((m%1440)+1440)%1440,a=toMin(w.a),b=toMin(w.b);return a<b?t>=a&&t<b:t>=a||t<b}return true}
+function cTest(r,l,sh){const c=r.cond,M=C_M[c.m];if(!M)return {ok:false};const v=M.v(l,sh);if(v==null)return {ok:false,v};if(M.en)return {ok:c.op==='ne'?v!==c.th:v===c.th,v};const t=+c.th;const ok={gt:v>t,ge:v>=t,lt:v<t,le:v<=t,eq:v===t,ne:v!==t}[c.op];return {ok:!!ok,v}}
+function cLines(r){return S.allLines.filter(l=>(!r.fabs||!r.fabs.length||r.fabs.includes(l.fab))&&(!r.tes||!r.tes.length||r.tes.includes(l.code)))}
+function condTick(m){let dirty=false;S.cSince=S.cSince||{};const sh=curShift();
+ S.rules.filter(r=>r.cond&&r.on).forEach(r=>{const on=cWhen(r,m);cLines(r).forEach(l=>{const k=r.id+':'+l.code;const t=on?cTest(r,l,sh):{ok:false};if(!t.ok){delete S.cSince[k];return}if(S.cSince[k]==null)S.cSince[k]=m;const since=S.cSince[k];
+  if(m-since>=(+r.cond.d||0)&&nf_(`cond:${k}:${since}`)){pushN({rid:r.id,rx:{t:'cond',rid:r.id,code:l.code},title:`${l.tesis}: ${r.name}`,body:`${cTxt(r)}. Şu an: ${cThL(r.cond,t.v)}. ${facL(l)}.`,to:[...(r.roles||[])],ch:(r.chs||[]).join(' + '),kind:r.kind,link:['job',l.code],code:l.code});dirty=true}})});return dirty}
+{const _m=extMinute;extMinute=function(m){const d=_m(m);return condTick(m)||d}}
+{const _x=rxDone;rxDone=function(x){if(x&&x.t==='cond'){const r=S.rules.find(q=>q.id===x.rid),l=line(x.code);return !r||!l||!r.on||!cTest(r,l,curShift()).ok}return _x(x)}}
+function cOpSel(m,v){const o=cOps(m);return sel('cO',o.map(k=>[k,C_OPN[k]]),o.includes(v)?v:o[0])}
+function cThIn(m,v){const M=C_M[m];if(M.en)return sel('cT',M.en,M.en.some(x=>x[0]===v)?v:'stop');return `<div class="row nowrap"><input class="inp num" id="cT" value="${esc(v==null?'':v)}" inputmode="decimal" style="max-width:150px" aria-label="Eşik"><span class="small muted">${esc(M.u)}</span></div>`}
+const cSec=(i,t,d)=>`<div class="cx-h">${ic(i)}<span>${t}</span></div><p class="small muted cx-d">${d}</p>`;
+{const _ro=EXT_OV.rule;EXT_OV.rule=function(){const o=S.ov,r=o.r;if(!(o.isNew||r.cond))return _ro.apply(this,arguments);
+ const c=r.cond||(r.cond={m:'stopMin',op:'gt',th:20,d:0,w:{t:'all'}});const w=c.w||{t:'all'};const roles=Object.keys(NAV).filter(k=>roleOn(k)).map(k=>[k,roleN(k)]);
+ return dlg(o.isNew?'Yeni Otomasyon':'Otomasyonu Düzenle',`${fld('Otomasyon adı <em class="req">*</em>',inp('rN',r.name||'','placeholder="ör. Uzun plansız duruş"'))}<input type="hidden" id="rK" value="${esc(C_M[c.m].k)}">
+  ${cSec('ceye','Neyi izleyeyim?','Hangi fabrika ve tesisleri, hangi metriği izleyeceğini seç.')}
+  ${fld('Metrik <em class="req">*</em>',sel('cM',Object.entries(C_M).map(([k,x])=>[k,x.n+(x.u?` (${x.u})`:'')]),c.m,'data-c="xCM"'))}
+  <div class="field"><label>Fabrika kapsamı</label>${ckList('rc-f',FABS.map(f=>[f.id,f.n]),r.fabs||[])}<small class="muted">Seçilmezse tüm fabrikalar.</small></div>
+  <div class="field"><label>Tesis kapsamı</label>${ckList('rc-t',S.allLines.map(l=>[l.code,`${l.code} · ${facL(l)}`]),r.tes||[])}<small class="muted">Seçilmezse kapsamdaki tüm tesisler. Koşul her tesis için ayrı değerlendirilir.</small></div>
+  ${cSec('cflt','Koşul','Ne zaman sorun sayılsın? Eşiği ve ne kadar sürmesi gerektiğini gir.')}
+  <div class="grid2">${fld('Operatör',`<div id="cOW">${cOpSel(c.m,c.op)}</div>`)}${fld('Eşik <em class="req">*</em>',`<div id="cTW">${cThIn(c.m,c.th)}</div>`)}</div>
+  <div class="grid2">${fld('Süreklilik (dk)',inp('cD',c.d||0,'inputmode="numeric" style="max-width:150px"'),'Koşul bu kadar dakika kesintisiz sürerse bildirim gider. 0 = hemen.')}${fld('Tekrar engelleme',sel('rR',[[0,'Her yeni durumda bir kez'],[15,'15 dk içinde tekrar gönderme'],[30,'30 dk içinde tekrar gönderme'],[60,'60 dk içinde tekrar gönderme']],r.rep||0))}</div>
+  ${cSec('clock','Ne zaman çalışsın?','Tüm gün ya da sadece bir vardiya veya saat aralığında.')}
+  ${fld('Geçerlilik',sel('cW',[['all','Tüm gün'],['sh','Seçili vardiyalar'],['hr','Saat aralığı']],w.t,'data-c="xCW"'))}
+  <div id="cWs" ${w.t==='sh'?'':'hidden'}>${ckList('cw-s',shiftList().map((s,i)=>[String(i),s.n]),w.sh||[])}</div>
+  <div id="cWh" class="grid2" ${w.t==='hr'?'':'hidden'}>${fld('Başlangıç',inp('cA',w.a||'08:00','placeholder="SS:DD" inputmode="numeric"'))}${fld('Bitiş',inp('cB',w.b||'16:00','placeholder="SS:DD" inputmode="numeric"'))}</div>
+  ${cSec('cmail','Kime, nasıl bildirilsin?','Koşul sağlanınca seçilen kişilere seçilen kanallardan bildirim gider. Koşul ortadan kalkınca bildirim kendiliğinden çözülür.')}
+  ${fld('Önem derecesi',sel('rS',SEVS,r.sev||'Uyarı'))}
+  <div class="field"><label>Kanallar <em class="req">*</em></label>${ckList('rc-c',CHS.map(x=>[x,x]),r.chs||[])}</div>
+  <div class="field"><label>Alıcı roller</label>${ckList('rc-r',roles,r.roles||[])}</div>
+  <div class="field"><label>Alıcı grupları</label>${(S.ngroups||[]).length?ckList('rc-g',S.ngroups.map(g=>[g.id,`${g.n} (${g.users.length} kişi)`]),r.grps||[]):'<p class="small muted" style="margin:0">Grup yok. Alıcı Grupları butonundan ekleyin.</p>'}</div>
+  <div class="field"><label>Görevler</label>${ckList('rc-o',[...new Set(S.users.filter(u=>u.active&&u.gorev).map(u=>u.gorev))].sort().map(g=>[g,g]),r.gorevs||[])}</div>
+  <div class="field"><label>Ek kişiler</label>${ckList('rc-u',S.users.filter(u=>u.active).map(u=>[u.id,`${u.n} · ${roleN(u.role)}`]),r.users||[])}</div>
+  <div class="field"><label>Departmanlar</label>${ckList('rc-d',DEPTS.map(d=>[d,d]),r.deps||[])}</div>
+  <label class="row nowrap small"><input type="checkbox" id="rA" ${r.andon?'checked':''}> Andon ekranında göster (ilgili tesisin saha monitöründe, koşul sürdükçe)</label>
+  ${ruleExtra(o)}
+  ${o.err?`<div class="err-line">${esc(o.err)}</div>`:''}`,`<button class="btn ghost" data-a="closeOv">Vazgeç</button><button class="btn gold" data-a="xRuleS">Kaydet</button>`)}}
+Object.assign(EXT_C,{
+ xCM(v){const o=document.getElementById('cO');document.getElementById('cOW').innerHTML=cOpSel(v,o&&o.value);document.getElementById('cTW').innerHTML=cThIn(v,C_M[v].en?'stop':'');document.getElementById('rK').value=C_M[v].k},
+ xCW(v){document.getElementById('cWs').hidden=v!=='sh';document.getElementById('cWh').hidden=v!=='hr'}});
+{const _s=acts.xRuleS;acts.xRuleS=function(d){const o=S.ov;if(!o||o.k!=='rule'||!(o.isNew||o.r.cond))return _s.call(acts,d);
+ const m=val('cM'),M=C_M[m],op=val('cO');let th=val('cT');const dd=parseInt(val('cD')||'0',10);const w={t:val('cW')};
+ if(w.t==='sh')w.sh=qv('cw-s');if(w.t==='hr'){w.a=val('cA');w.b=val('cB')}
+ o.r.cond={m,op,th,d:isNaN(dd)?0:dd,w};let err='';
+ if(!M.en){const n=parseFloat(String(th).replace(',','.'));if(isNaN(n)||n<0)err='Eşik için sıfır veya daha büyük bir sayı girin.';else o.r.cond.th=n}
+ if(!err&&!(dd>=0&&dd<=480))err='Süreklilik 0–480 dk arasında olmalı.';
+ if(!err&&w.t==='sh'&&!w.sh.length)err='En az bir vardiya seçin.';
+ if(!err&&w.t==='hr'&&(!/^\d{2}:\d{2}$/.test(w.a)||!/^\d{2}:\d{2}$/.test(w.b)||w.a===w.b))err='Saat aralığını SS:DD biçiminde girin (başlangıç ve bitiş farklı olmalı).';
+ if(err){o.err=err;['fabs:rc-f','tes:rc-t','chs:rc-c','roles:rc-r','grps:rc-g','gorevs:rc-o','users:rc-u','deps:rc-d'].forEach(p=>{const [k,c]=p.split(':');o.r[k]=qv(c)});o.r.name=val('rN');renderOv();return}
+ const old=S.rules.find(x=>x.id===o.r.id);const was=old&&old.cond?cTxt(old)+' · '+cWTxt(old):'';
+ o.r.when=cTxt(o.r);o.r.wait=cWTxt(o.r);const cond=o.r.cond;
+ _s.call(acts,d);if(S.ov&&S.ov.err)return;
+ const t=S.rules.find(x=>x.id===o.r.id)||S.rules[S.rules.length-1];if(!t)return;t.cond=cond;t.when=cTxt(t);t.wait=cWTxt(t);t.ev='cond'+t.id;t.sys=false;
+ if(was&&was!==t.when+' · '+t.wait)audit('Otomasyon koşulu',t.name,was,t.when+' · '+t.wait);Object.keys(S.cSince||{}).forEach(k=>{if(k.startsWith(t.id+':'))delete S.cSince[k]});render()}}
+function condSeed(){if(!S.rules||!S.users||S.condV===1)return;S.condV=1;const base={on:true,users:[],deps:[],fabs:[],tes:[],grps:[],gorevs:[],rep:0,sys:false,edited:true,ver:1,andon:false};
+ [{name:'Tesis 10 dakikadır duruşta',kind:'stop',sev:'Uyarı',roles:['uretimMd'],chs:['Uygulama','E-posta'],cond:{m:'st',op:'eq',th:'stop',d:10,w:{t:'all'}}},
+  {name:'Hedefin gerisinde kalan tesis',kind:'target',sev:'Uyarı',roles:['amir'],chs:['Uygulama','Push'],cond:{m:'perf',op:'lt',th:70,d:30,w:{t:'all'}}}].forEach(x=>{const r=Object.assign({},base,x,{id:Math.max(...S.rules.map(y=>y.id))+1});r.when=cTxt(r);r.wait=cWTxt(r);r.ev='cond'+r.id;S.rules.push(r)})}
+{const _r=render;render=function(){condSeed();return _r.apply(this,arguments)}}
+
 if(!S.authed)render();
 </script>
 </body></html>
