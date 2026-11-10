@@ -677,6 +677,17 @@ tr.muted-row td{color:#9a93a5}
 .vc-w{overflow-x:auto}.vc{display:block}.vc .vc-v{font-size:11px;font-weight:700;fill:var(--ink);text-anchor:middle}.vc .vc-l{font-size:11px;fill:var(--muted);text-anchor:middle}.vc .vc-ax{stroke:var(--line);stroke-width:1}
 .vc-lg{display:flex;gap:16px;font-size:12.5px;color:var(--ink)}.vc-lg span{display:inline-flex;align-items:center;gap:6px}.vc-lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
 #rdR[hidden]{display:none}
+/* Sol menü: giriş ekranıyla aynı kimlik (koyu zemin, renkli parıltı, degrade seçili öğe). Soft tema etkilenmez. */
+:root:not([data-tone="soft"]) .side{background:radial-gradient(130% 42% at 0% 0%,rgba(214,58,106,.30),transparent 62%),radial-gradient(110% 38% at 100% 6%,rgba(122,52,220,.34),transparent 66%),radial-gradient(120% 30% at 0% 100%,rgba(224,113,59,.20),transparent 70%),linear-gradient(180deg,#1f1428 0%,#150e1b 55%,#120c17 100%);border-right:1px solid rgba(255,255,255,.06)}
+:root:not([data-tone="soft"]) .nav button{color:#e4d8ee}
+:root:not([data-tone="soft"]) .nav button:hover{background:rgba(255,255,255,.07)}
+:root:not([data-tone="soft"]) .nav button.on{background:linear-gradient(90deg,#d8a93a 0%,#e0713b 55%,#d63a6a 100%);color:#fff;box-shadow:0 8px 22px rgba(214,58,106,.28)}
+:root:not([data-tone="soft"]) .nav button.on .cnt{background:rgba(20,12,24,.35)}
+:root:not([data-tone="soft"]) .nav button:focus-visible{outline:2px solid #eaba4e;outline-offset:1px}
+:root:not([data-tone="soft"]) .nav .nav-h{color:#b9a7cb}
+:root:not([data-tone="soft"]) .nav-grp.act>.nav-h{color:#fff}
+:root:not([data-tone="soft"]) .nav-sub{border-left-color:rgba(255,255,255,.10)}
+:root:not([data-tone="soft"]) .side .foot{color:#9d8bb0}
 </style></head>
 <body><div id="app" style="height:100%"></div><div id="ov"></div><div id="sms"></div><div id="toast"></div><div id="tip" hidden></div><input id="planFile" type="file" accept=".xlsx" data-file="plan" aria-label="Excel plan dosyası" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0">
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
