@@ -2263,7 +2263,7 @@ acts.xTblX=d=>{const R=CF_REG[d.x];if(!R){toast('Tablo bulunamadı.');return}con
   xlsxOut(`Lark_${d.x}_${iso0()}.xlsx`,{Liste:[cols.map(c=>cellTxt(c[0])),...rows.map(r=>cols.map(c=>{const t=cellTxt(c[1](r));const n=cellNum(t);return /^-?[\d.,]+$/.test(t)&&!isNaN(n)?n:t}))]});audit('Dışa aktarıldı (Excel)',d.x,'',`${rows.length} satır`)};
 acts.xAttRm=d=>{const dr=curDraft();if(!dr||!dr.media._rec)return;dr.media._rec.splice(+d.x,1);render()};
 /* ---- Modül bazlı menü: ekranlar müşteri modüllerine göre gruplanır, başlık tıklanınca açılır/kapanır ---- */
-const NAV_MODS=[['prod','Üretim','lines',['lines','shiftE','plan','eff','stopA','scrapE']],['qual','Kalite','quality',['forms','quality','ncr','alerts']],['track','Takip','act',['actions','auto','ppl']],['anl','Analiz','kpi',['dash','andon','reports']],['mgmt','Yönetim','admin',['dataC','defs','admin']]];
+const NAV_MODS=[['prod','Üretim','lines',['lines','shiftE','plan','eff','stopA','scrapE']],['qual','Kalite','quality',['forms','quality','ncr','alerts']],['track','Takip','act',['actions','auto']],['anl','Analiz','kpi',['dash','andon','reports','ppl']],['mgmt','Yönetim','admin',['dataC','defs','admin']]];
 const JOBR={job:'lines',joblist:'lines',form:'forms',andonfull:'andon'};
 function navTree(keys,btn){const cur=JOBR[S.route[0]]||S.route[0];const col=S.navCol||{};let h=keys.includes('home')?btn('home'):'';const used=new Set(['home']);
   NAV_MODS.forEach(([id,lb,icn,items])=>{const ks=items.filter(k=>keys.includes(k));if(!ks.length)return;ks.forEach(k=>used.add(k));const act=ks.includes(cur);const open=act||!col[id];
@@ -2952,7 +2952,7 @@ condTick=function(m){let dirty=false;S.cSince=S.cSince||{};const sh=curShift();
 /* ---- Raporlama (RP): filtreler, kırılımlar, grafik, karşılaştırma, tasarım, denetim formatı ---- */
 Object.assign(RT,{pplTes:'Personel × tesis'});
 OPI.xAudP='exp';
-const RGR={hour:'Saatlik (bugün)',p3:'3 saatlik (canlı)',shift:'Vardiyalık',day:'Günlük',week:'Haftalık',month:'Aylık'};
+const RGR={hour:'Saatlik',p3:'3 saatlik (canlı)',shift:'Vardiyalık',day:'Günlük',week:'Haftalık',month:'Aylık'};
 const RPG={now:'Anlık (bu vardiya)',shift:'Vardiyalık',day:'Günlük',month:'Aylık'};
 const RCH={bar:'Sütun',line:'Çizgi',area:'Alan',none:'Grafik yok'};
 const RCMP={'':'Rapor kırılımına göre',tes:'Tesis karşılaştırması',fab:'Fabrika karşılaştırması',all:'Şirket geneli'};
@@ -2972,8 +2972,12 @@ function pplPeriods(f,g){const out=[];const L=pplScores(f);const sh=curShift();
  const from=f.from?dIdx(f.from):-6,to=f.to?dIdx(f.to):0;
  L.forEach(p=>pplSer(p,'d').forEach((x,i)=>{const d=i-29;if(d<from||d>to)return;if(g==='day')out.push({per:fmtDate(iso0(d)),p,koli:x.v,tgt:p.target});else [['1. Vardiya',.36],['2. Vardiya',.34],['3. Vardiya',.30]].forEach(([n,s])=>{if(!f.sh||f.sh===n)out.push({per:`${fmtDate(iso0(d))} ${n}`,p,koli:Math.round(x.v*s),tgt:Math.round(p.target/3)})})}));return out}
 {const _rd=repDef;repDef=function(t,f,g){const fn=r=>facL(line(r.code));
- if(t==='prod'&&g==='hour'){const rows=[];scopeLines().filter(l=>(!f.fab||l.fab===f.fab)&&(!f.code||l.code===f.code)&&(!f.wo||(l.job&&l.job.no.toLocaleLowerCase('tr').includes(String(f.wo).toLocaleLowerCase('tr'))))).forEach(l=>Object.entries(l.hourly||{}).sort((a,b)=>a[0]-b[0]).forEach(([h,k])=>rows.push({d:`${hm(h*60)}-${hm(h*60+60)}`,code:l.code,koli:k,tgt:l.rate})));
-  return {cols:[['Saat',x=>x.d],['Tesis',fn],['Hedef (koli)',x=>x.tgt,'n'],['Gerçekleşen (koli)',x=>x.koli,'n'],['Oran (%)',x=>x.tgt?+(x.koli/x.tgt*100).toFixed(1):0,'n']],rows,m:{f:x=>x.koli,u:'koli'},note:'Saatlik değerler bugünkü çıkış onaylarından gelir.',ser:{by:x=>x.d,v:x=>x.koli,t:x=>x.tgt,u:'koli'}}}
+ if(t==='prod'&&g==='hour'){const rows=[];const wo=String(f.wo||'').toLocaleLowerCase('tr');const SH0={'1. Vardiya':8,'2. Vardiya':16,'3. Vardiya':24};
+  S.H.prod.filter(r=>flt([r],f).length).forEach(r=>{const l=line(r.code);if(!l)return;const rr=rng((r.d+40)*977+(SH0[r.sh]||8)*31+r.code.charCodeAt(r.code.length-1)*7+r.code.length);const w=[...Array(8)].map(()=>.85+rr()*.3);const ws=w.reduce((a,b)=>a+b,0);let left=r.koli;w.forEach((x,i)=>{const k=i===7?left:Math.round(r.koli*x/ws);left-=k;const h=(SH0[r.sh]||8)+i;rows.push({day:r.d+(h>=24?1:0),h:h%24,code:r.code,koli:k,tgt:l.rate,sh:r.sh})})});
+  const inT=(f.from==null||f.from===''||0>=dIdx(f.from))&&(f.to==null||f.to===''||0<=dIdx(f.to));
+  if(inT)scopeLines().filter(l=>(!f.fab||l.fab===f.fab)&&(!f.code||l.code===f.code)&&(!wo||(l.job&&l.job.no.toLocaleLowerCase('tr').includes(wo)))&&(!f.sku||(l.job&&l.job.pcode===f.sku))).forEach(l=>Object.entries(l.hourly||{}).sort((a,b)=>a[0]-b[0]).forEach(([h,k])=>{const sn=shiftAt(h*60).name;if(!f.sh||f.sh===sn)rows.push({day:0,h:+h%24,code:l.code,koli:k,tgt:l.rate,sh:sn})}));
+  rows.forEach(x=>x.d=`${fmtDate(iso0(x.day)).slice(0,5)} ${pad(x.h)}:00`);
+  return {cols:[['Tarih',x=>fmtDate(iso0(x.day))],['Saat',x=>`${pad(x.h)}:00-${pad((x.h+1)%24)}:00`],['Vardiya',x=>x.sh],['Tesis',fn],['Hedef (koli)',x=>x.tgt,'n'],['Gerçekleşen (koli)',x=>x.koli,'n'],['Oran (%)',x=>x.tgt?+(x.koli/x.tgt*100).toFixed(1):0,'n']],rows,m:{f:x=>x.koli,u:'koli'},note:'Bugünkü saatlik değerler çıkış onaylarından gelir. Geçmiş günlerin saatlik kırılımı prototipte vardiya toplamından örnek olarak dağıtılmıştır.',ser:{by:x=>x.d,v:x=>x.koli,t:x=>x.tgt,u:'koli'}}}
  if(t==='people'){const pg=S.rPG||'day';const rows=pplPeriods(f,pg).map(x=>({...x,code:x.p.last,eff:x.tgt?x.koli/x.tgt*100:0}));return {cols:[['Dönem',x=>x.per],['Kart',x=>x.p.card],['Personel',x=>x.p.name],['Fabrika',x=>fabN(x.p.fab)],['Tesis',x=>line(x.p.last)?line(x.p.last).tesis:''],['Üretim (koli)',x=>x.koli,'n'],['Hedef (koli)',x=>x.tgt,'n'],['Verimlilik (%)',x=>+x.eff.toFixed(1),'n']],rows,m:{f:x=>x.koli,u:'koli'},note:'Personel üretimi kart okutma kayıtlarından gelecek; prototipte örnek veridir.',ser:{by:x=>x.per,v:x=>x.koli,t:x=>x.tgt,u:'koli'}}}
  if(t==='pplTes'){const rows=[];pplScores(f).forEach(p=>pplTes(p).forEach(([c,s])=>{if(f.code&&c!==f.code)return;rows.push({p,code:c,share:s,koli:Math.round(p.koli*s)})}));return {cols:[['Kart',x=>x.p.card],['Personel',x=>x.p.name],['Fabrika',x=>fabN(x.p.fab)],['Tesis',fn],['Çalışma payı (%)',x=>Math.round(x.share*100),'n'],['Üretim (koli)',x=>x.koli,'n']],rows,m:{f:x=>x.koli,u:'koli'},note:'Hangi tesiste çalışıldığı kart okutmadan gelir; prototipte örnek dağılımdır.',ser:{by:x=>x.p.name,v:x=>x.koli,u:'koli'}}}
  const d=_rd(t,f,g);
