@@ -3226,6 +3226,10 @@ gantt=function(){
       return `<button class="g-j ${cls}${dn?' done':''}" style="left:${pos(s)}%;width:calc(${w/(b-a)*100}% - 2px)" data-a="go" data-r="joblist" data-x="${esc(l.code)}" data-tip="${esc(`${j.no} · ${p.name}\n${j.start} · ${j.dur} dk · Plan ${nf(j.plan)} koli${dn&&j.good?` · Gerçekleşen ${nf(j.good)} koli`:''}`)}">${esc(p.seri&&!p.seri.startsWith('Görsel')?p.seri:j.no)} · ${nf(j.plan)}</button>`}).join('')}${d===todayStr()?`<div class="g-now" style="left:${pos(sm(hm(nowM())))}%"></div>`:''}</div></div>`};
   return `<div style="overflow-x:auto"><div class="gantt"><div class="g-h"><span></span><div class="g-t">${ticks.map(h=>`<span class="num" style="left:${(h*60-a)/(b-a)*100}%;${h===32?'transform:translateX(-100%)':''}">${pad(h%24)}:00</span>`).join('')}</div></div>${S.lines.map(row).join('')}</div></div>
   <div class="legend"><span><i style="background:var(--p700)"></i>Gofret</span><span><i style="background:var(--g600)"></i>Kek & Pastane</span><span><i style="background:#a33a7b"></i>Marshmallow</span><span><i style="background:var(--p700);opacity:.45"></i>Tamamlandı</span><span><i style="background:var(--stop);width:3px;border-radius:0"></i>Şu an</span></div>`};
+/* Planlama menüden açılınca bugün seçili gelir; tarih yanında "Bugün" */
+{const _n=acts.nav;acts.nav=function(d){if(d&&d.x==='plan')S.planDate=todayStr();return _n.apply(this,arguments)}}
+acts.xPlToday=()=>{S.planDate=todayStr();render()};
+{const _v=vPlan;vPlan=function(){return _v().replace('data-c="planDate" value="'+S.planDate+'">','data-c="planDate" value="'+S.planDate+'">'+(S.planDate!==todayStr()?'<button class="btn ghost sm" data-a="xPlToday">Bugün</button>':''))}}
 if(!S.authed)render();
 </script>
 </body></html>
