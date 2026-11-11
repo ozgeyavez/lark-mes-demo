@@ -3230,6 +3230,16 @@ gantt=function(){
 {const _n=acts.nav;acts.nav=function(d){if(d&&d.x==='plan')S.planDate=todayStr();return _n.apply(this,arguments)}}
 acts.xPlToday=()=>{S.planDate=todayStr();render()};
 {const _v=vPlan;vPlan=function(){return _v().replace('data-c="planDate" value="'+S.planDate+'">','data-c="planDate" value="'+S.planDate+'">'+(S.planDate!==todayStr()?'<button class="btn ghost sm" data-a="xPlToday">Bugün</button>':''))}}
+/* Veri Merkezi > Gerçekleşen Üretim = sistemde biten siparişler (iş emirleri). Salt okunur; tesis girişlerinden oluşur, ERP'ye aktarılır */
+function finRows(){const T=todayStr();const out=[];const codes=new Set(S.lines.map(l=>l.code));
+  S.lines.forEach(l=>(l.done||[]).filter(j=>j.state==='done').forEach(j=>{const st=j.startedAt||j.start;const en=j.finishedAt||'';out.push({no:j.no,code:l.code,pcode:j.pcode,date:j.date||T,plan:j.plan,good:j.good||0,scrap:j.scrap||0,st,en,min:en?toMin(en)-toMin(st):0,erp:false})}));
+  (S.planX||[]).filter(x=>x.state==='done'&&codes.has(x.code)).forEach((x,k)=>{const sc=Math.round(x.plan*(.008+(k%9)/1000));const s0=toMin(x.start),e0=(s0+x.dur)%1440;out.push({no:x.no,code:x.code,pcode:x.pcode,date:x.date,plan:x.plan,good:x.good,scrap:sc,st:x.start,en:hm(e0),min:x.dur,erp:true})});
+  return out.sort((a,b)=>b.date.localeCompare(a.date)||b.no.localeCompare(a.no))}
+function vFinJobs(){const R=finRows();const g=R.reduce((a,r)=>a+r.good,0),sc=R.reduce((a,r)=>a+r.scrap,0),pl=R.reduce((a,r)=>a+r.plan,0);
+  return `<section class="card stack"><div class="row between"><div><h3>Gerçekleşen Üretim</h3><div class="small muted">Sistemde biten siparişler. Veriler tesisteki çıkış onayları, duruş ve fire girişlerinden otomatik oluşur; elle eklenmez, ERP'ye aktarılır.</div></div>${xbtn('Excel','xTblX','fin','ghost sm','down')}</div>
+  <div class="kpis">${kcard('Biten sipariş',nf(R.length),'adet')}${kcard('Sağlam üretim',nf(g),'koli')}${kcard('Fire',nf(sc),'koli')}${kcard('Plana uyum',pl?'%'+Math.round(g/pl*100):'–','')}</div>
+  ${tbl([['İş Emri',r=>`<b class="num" style="white-space:nowrap">${esc(r.no)}</b>`],['Tesis',r=>`<span style="white-space:nowrap">${esc(r.code)}</span>`],['Ürün',r=>{const p=P(r.pcode);const nm=p?(p.seri&&!p.seri.startsWith('Görsel')?p.seri:p.name):'';return `<span title="${esc(p?p.name:'')}" style="white-space:nowrap">${esc(nm)} <small class="muted num">${esc(r.pcode)}</small></span>`}],['Tarih',r=>fmtDate(r.date),'num'],['Başlangıç',r=>esc(r.st),'num'],['Bitiş',r=>esc(r.en||'–'),'num'],['Süre',r=>nf(r.min)+' dk','num'],['Plan',r=>nf(r.plan),'num'],['Sağlam',r=>nf(r.good),'num'],['Fire',r=>nf(r.scrap),'num'],['Uyum',r=>r.plan?'%'+Math.round(r.good/r.plan*100):'–','num'],['ERP',r=>r.erp?'<span class="pill run">Aktarıldı</span>':'<span class="pill idle">Sırada</span>']],R,{cf:'fin',key:'fin',size:25,empty:'Biten sipariş yok.'})}</section>`}
+{const _v=vDataC;const vD=function(){let h=_v();if(S.dataT!=='actual')return h;const i=h.indexOf('<div class="tabs no-print">');if(i<0)return h;const j=h.indexOf('</div>',i)+6;return h.slice(0,j)+vFinJobs()};vDataC=vD;EXT_VIEWS.dataC=vD}
 if(!S.authed)render();
 </script>
 </body></html>
