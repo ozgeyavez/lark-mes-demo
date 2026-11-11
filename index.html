@@ -1039,7 +1039,7 @@ function vJob(){
   const exits=j&&j.exits&&j.exits.length?`<div class="tw"><table><thead><tr><th>Saat</th><th>Sağlam</th><th>Fire</th><th>Onaylayan</th><th>Not</th></tr></thead><tbody>${j.exits.map(x=>`<tr><td class="num">${esc(x.at)}</td><td class="num b">${nf(x.good)}</td><td class="num">${nf(x.scrap)}</td><td>${esc(x.by)}</td><td>${esc(x.note)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Henüz çıkış onayı yok.</div>';
   const spec=!p?'':getSpec(p).status==='Onaylı'?specCard(p,true):`<div class="band-info">${ic('clock')}<span>${esc(p.name)} için referans kartı onay bekliyor. Kalite onaylayınca burada görünür.</span></div>`;
   const tabs=[['ctl','Saatlik Kontrol'],['stop','Duruşlar'],['exit','Çıkış Onayları'],['spec','Referans Kartı']];
-  if(S.jobLay!=='old')return vJobNew({l,j,p,os,can:canIn,gap,body:{ctl:ctlTab,stop:stops,exit:exits,spec}});
+  return vJobNew({l,j,p,os,can:canIn,gap,body:{ctl:ctlTab,stop:stops,exit:exits,spec}});
   return `<div class="ph"><button class="back" data-a="go" data-r="joblist" data-x="${esc(l.code)}" aria-label="Geri">${ic('back')}</button><div class="grow"><h1>${j?esc(j.no):esc(l.code)} Detay</h1><div class="sub">${esc(l.code)} · ${esc(l.name)}${j?` · ${esc(j.lot)} · Plan ${fmtDate(j.date)} ${esc(j.start)} – ${jobEndTxt(j)}${j.startedAt?` · Başladı ${esc(j.startedAt)}`:''}`:''}</div></div>${layTog()}<span class="pill ${l.status}">${STL[l.status]}</span></div>
   <div class="detail"><div class="stack">
     <section class="lc ${l.status}" style="cursor:default;transform:none"><div class="lc-h"><span class="code">${esc(l.code)}</span><span class="st">${l.status==='stop'&&os?`${esc(stopName(os.code))} · ${nowM()-os.start} dk`:STL[l.status]}</span></div>
@@ -1838,7 +1838,7 @@ function qActs(l){const R=S.role;const X=esc(l.code);const on=l.status!=='idle'&
   return `<div class="jx-q">${rows.map(([n,[c,s],can,attr,btn,who])=>`<div class="jx-qr"><div class="grow"><b>${n}</b><small class="q-${c}">${s}</small></div>${can?`<button class="btn sm ${c==='wait'?'gold':'ghost'}" ${attr} ${on?'':'disabled'}>${btn}</button>`:`<span class="small muted">${who}</span>`}</div>`).join('')}</div>`;
 }
 /* ---- Tesis detay: üstte tesis kartı, altta eşit iki panel (Üretim / Kalite) ---- */
-const layTog=()=>`<div class="jx-lay no-print" role="group" aria-label="Görünüm">${[['new','Yeni görünüm'],['old','Eski görünüm']].map(([k,n])=>`<button class="${(S.jobLay==='old'?'old':'new')===k?'on':''}" data-a="xJobLay" data-x="${k}">${n}</button>`).join('')}</div>`;
+const layTog=()=>'';
 function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.job;const X=esc(l.code);const dis=can?'':'disabled';
   const e=J?oee(l):null;const rate=e&&e.run?Math.round(e.total/e.run*60):0;
   const nums=[['Plan',J?nf(J.plan):'–','koli'],['Sağlam çıkış',J?nf(J.good):'–','koli'],['Plana kalan',J?nf(Math.max(0,J.plan-J.good)):'–','koli'],['Fire',J&&J.good+J.scrap?'%'+nf1((J.scrap/(J.good+J.scrap)*100).toFixed(1)):'–',''],['Hız',J?`${rate}`:'–',`/ ${l.rate} hedef`]];
@@ -1883,7 +1883,7 @@ function vJobNew(o){const {l,j,p,os,can,gap,body}=o;const st=l.status;const J=l.
   </div>`;
 }
 Object.assign(acts,{
- xJobLay(d){S.jobLay=d.x;render()},
+
  xIn(d){S.ov={k:'inq',code:d.x};render()},
  xInS(d){const l=line(d.x);const J=l.job;const lot=val('inL').trim();if(!lot){S.ov.err='Lot / barkod okutun.';renderOv();return}const m=val('inM');(J.comps=J.comps||[]).push({m,lot,at:hm(nowM()),by:ME().n,note:val('inN')});audit('Bileşen okutuldu',l.code,'',`${J.no} ${m} lot ${lot}`);S.ov=null;toast(`${m} lot ${lot} kaydedildi.`);render()},
  xCmpDemo(){const O=S.ov;const l=line(O.code);const J=l.queue.find(x=>x.no===O.sel);const cs=jobComps(l,J);const lots=O.lots[J.no];cs.forEach((c,i)=>{if(!lots[i])lots[i]=`L${String(J.date).slice(2).replace(/-/g,'')}-${trn(c.m).slice(0,3).toUpperCase()}${pad(i+1)}`});renderOv()},
